@@ -107,6 +107,7 @@ The `b4xV5.ini` configuration file is **created by B4A on its first run**, not d
 1. **Launch B4A once** (from menu or desktop)
 2. **Close B4A** (no need to create a project)
 3. **Run the configurator**:
+   
    B4A
    ```bash
    wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4a_settings.sh
