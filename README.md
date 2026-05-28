@@ -241,14 +241,21 @@ winetricks -q dotnet452 vcrun2010 dxvk
 To completely remove B4A or B4J and all associated files (but keeping Projects folder):
 
 ### Interactive Uninstall
-B4A
+
+```bash
+wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/uninstall_b4x_wine.sh
+chmod +x uninstall_b4x_wine.sh
+./uninstall_b4x_wine.sh --keep-projects
+```
+
+B4A only
 ```bash
 wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/uninstall_b4a_wine.sh
 chmod +x uninstall_b4a_wine.sh
 ./uninstall_b4a_wine.sh --keep-projects
 ```
 
-B4J
+B4J only
 ```bash
 wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/uninstall_b4j_wine.sh
 chmod +x uninstall_b4j_wine.sh
