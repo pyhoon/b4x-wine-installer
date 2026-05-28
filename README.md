@@ -241,9 +241,9 @@ chmod +x uninstall_b4a_wine.sh
 
 B4J
 ```bash
-wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/uninstall_b4a_wine.sh
-chmod +x uninstall_b4a_wine.sh
-./uninstall_b4a_wine.sh --keep-projects
+wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/uninstall_b4j_wine.sh
+chmod +x uninstall_b4j_wine.sh
+./uninstall_b4j_wine.sh --keep-projects
 ```
 
 ### Options
