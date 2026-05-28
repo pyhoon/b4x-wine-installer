@@ -20,7 +20,8 @@ readonly JDK_URL="https://www.b4x.com/b4j/files/jdk-19.0.2.zip"
 readonly WINE_PREFIX="${HOME}/.wine_b4x"
 readonly WINE_ARCH="win64"
 readonly JAVA_WINE_PATH="C:\\Java"
-readonly DESKTOP_ENTRY="${HOME}/.local/share/applications/b4x-wine.desktop"
+readonly B4A_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4a.desktop"
+readonly B4J_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4j.desktop"
 readonly B4A_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4A.png"
 readonly B4J_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4J.png"
 
@@ -393,8 +394,8 @@ if [[ -f "$B4A_EXE" ]]; then
     fi
     
     # Create .desktop file
-    mkdir -p "$(dirname "$DESKTOP_ENTRY")"
-    cat > "$DESKTOP_ENTRY" <<EOF
+    mkdir -p "$(dirname "$B4A_DESKTOP_ENTRY")"
+    cat > "$B4A_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
 Name=B4A
@@ -410,14 +411,14 @@ StartupNotify=true
 EOF
     
     # Make executable and update desktop database
-    chmod +x "$DESKTOP_ENTRY"
+    chmod +x "$B4A_DESKTOP_ENTRY"
     update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
     
     # Also copy to Desktop for convenience
-    cp "$DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
-        chmod +x "${HOME}/Desktop/b4a-wine.desktop" 2>/dev/null || true
+    cp "$B4A_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
+        chmod +x "${HOME}/Desktop/b4a.desktop" 2>/dev/null || true
     
-    log_success "Desktop launcher (B4A) created: ${DESKTOP_ENTRY}"
+    log_success "Desktop launcher (B4A) created: ${B4A_DESKTOP_ENTRY}"
 else
     log_warn "B4A.exe not found at expected locations. Launcher creation skipped."
 fi
@@ -446,8 +447,8 @@ if [[ -f "$B4J_EXE" ]]; then
     fi
     
     # Create .desktop file
-    mkdir -p "$(dirname "$DESKTOP_ENTRY")"
-    cat > "$DESKTOP_ENTRY" <<EOF
+    mkdir -p "$(dirname "$B4J_DESKTOP_ENTRY")"
+    cat > "$B4J_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
 Name=B4J
@@ -463,14 +464,14 @@ StartupNotify=true
 EOF
     
     # Make executable and update desktop database
-    chmod +x "$DESKTOP_ENTRY"
+    chmod +x "$B4J_DESKTOP_ENTRY"
     update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
     
     # Also copy to Desktop for convenience
-    cp "$DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
-        chmod +x "${HOME}/Desktop/b4j-wine.desktop" 2>/dev/null || true
+    cp "$B4J_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
+        chmod +x "${HOME}/Desktop/b4j.desktop" 2>/dev/null || true
     
-    log_success "Desktop launcher (B4J) created: ${DESKTOP_ENTRY}"
+    log_success "Desktop launcher (B4J) created: ${B4J_DESKTOP_ENTRY}"
 else
     log_warn "B4J.exe not found at expected locations. Launcher creation skipped."
 fi
