@@ -13,6 +13,7 @@
 ![logo](icons/Combo.png)
 ![screenshot1](screenshots/Screenshot1.png)
 ![screenshot2](screenshots/Screenshot2.png)
+![screenshot3](screenshots/Screenshot3.png)
 
 <!-- 📋 Table of Contents (optional but helpful) -->
 ## 📑 Table of Contents
