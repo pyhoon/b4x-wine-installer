@@ -59,13 +59,13 @@ This script automatically:
 
 ### 1. Download the script
 ```bash
-wget https://raw.githubusercontent.com/pyhoon/b4a-wine-installer/main/install_b4a_wine.sh
-chmod +x install_b4a_wine.sh
+wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/install_b4x_wine.sh
+chmod +x install_b4x_wine.sh
 ```
 
 ### 2. Run the installer
 ```bash
-./install_b4a_wine.sh
+./install_b4x_wine.sh
 ```
 > 🔐 You'll be prompted for your password when `sudo` is needed.
 
