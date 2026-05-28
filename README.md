@@ -20,7 +20,7 @@
 - [🚀 Quick Start](#-quick-start)
 - [⚙️ Configuration](#️-configuration-details)
 - [🔧 Troubleshooting](#-troubleshooting)
-- [🗑️ Uninstall B4A/B4J](#%EF%B8%8F-uninstall-b4a-b4j)
+- [🗑️ Uninstall B4A/B4J](#%EF%B8%8F-uninstall-b4a--b4j)
 - [📚 Resources](#-references--resources)
 
 <!-- 📝 Main content continues... -->
