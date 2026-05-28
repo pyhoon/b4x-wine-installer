@@ -1,3 +1,3 @@
-# b4a-b4j-wine-installer
+# b4x-wine-installer
 
-B4A+B4J Wine Installer
+B4A + B4J Wine Installer
