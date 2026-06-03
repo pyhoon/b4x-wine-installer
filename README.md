@@ -192,6 +192,11 @@ Backup first!
 Then re-run the installer script:
 ```./uninstall_b4x_wine.sh --force && ./install_b4x_wine.sh```
 
+### rundll32.exe - This application cannot be started. Do you want to view information about this issue?
+You may see this error when reinstall. Just click No. It will pops up again. Click No again.
+
+
+
 ## 📚 Resources
 
 - WineHQ Installation Guide for Linux Mint <sup>[linuxcapable.com](https://linuxcapable.com/how-to-install-wine-on-linux-mint/)</sup>
