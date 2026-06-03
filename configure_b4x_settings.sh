@@ -87,8 +87,10 @@ parse_args() {
 select_products() {
     # If flags weren't set via CLI, show interactive menu
     if [[ "$DO_B4A" == false && "$DO_B4J" == false ]]; then
-        echo -e "Select Product(s) to Configure"
-        
+        echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║  Select Product(s) to Configure                        ║${NC}"
+        echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}\n"
+
         PS3="Enter choice: "
         options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
         select opt in "${options[@]}"; do
