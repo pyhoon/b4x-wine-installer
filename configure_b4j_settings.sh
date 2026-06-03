@@ -35,7 +35,7 @@ ini_set() {
     local file="$1" key="$2" value="$3"
     if [[ ! -f "$file" ]]; then
         log_error "INI file not found: $file"
-        log_info "Please launch B4A at least once first, then run this script again."
+        log_info "Please launch B4J at least once first, then run this script again."
         exit 1
     fi
 
@@ -72,7 +72,8 @@ if [[ ! -f "$B4J_INI_FILE" ]]; then
 fi
 
 log_info "Configuring b4xV5.ini..."
-ini_set "$B4A_INI_FILE" "AdditionalLibrariesFolder" "${B4X_ADDITIONAL_LIBRARIES}"
+# Note: Use double backslashes in bash to produce single backslashes in the INI file
+ini_set "$B4J_INI_FILE" "AdditionalLibrariesFolder" "${B4X_ADDITIONAL_LIBRARIES}"
 ini_set "$B4J_INI_FILE" "FontName2" "Ubuntu Sans Mono"
 ini_set "$B4J_INI_FILE" "FontSize2" "15"
 ini_set "$B4J_INI_FILE" "logs_FontName2" "Ubuntu Sans"
