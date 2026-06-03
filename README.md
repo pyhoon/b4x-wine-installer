@@ -11,8 +11,7 @@
 ## 📑 Table of Contents
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
-- [⚙️ Configurable Paths](#️-configurable-paths)
-- [🔧 Post-Install Configuration](#-post-install-configuration)
+- [⚙️ Configuration Details](#️%EF%B8%8F-configuration-details)
 - [📁 Folder Structure](#-folder-structure)
 - [🗑️ Uninstall](#%EF%B8%8F-uninstall)
 - [🔍 Troubleshooting](#-troubleshooting)
