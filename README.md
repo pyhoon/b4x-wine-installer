@@ -82,7 +82,7 @@ The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. To 
 | `AdditionalLibrariesFolder` | `C:\Additional Libraries` | Shared library folder |
 | `PlatformFolder` (B4A only) | `C:\Android\platforms\android-36` | Android SDK platform ref |
 
-## 📁 Folder Structure Created
+## 📁 Folder Structure
 
 ```
 ~/.wine_b4x/                  # Unified Wine prefix
