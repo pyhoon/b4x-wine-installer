@@ -117,9 +117,7 @@ parse_args() {
 select_products() {
     # If flags weren't set via CLI, show interactive menu
     if [[ "$INSTALL_B4A" == false && "$INSTALL_B4J" == false ]]; then
-        echo -e "\n${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${BLUE}║  Select B4X Product(s) to Install                        ║${NC}"
-        echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
+        echo -e "${BLUE}*** Select B4X Product(s) to Install ***${NC}"
         
         PS3="Enter choice: "
         options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
