@@ -235,10 +235,28 @@ if [[ "$INSTALL_B4A" == true ]]; then
     SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
     mkdir -p "$(dirname "$SDK_ZIP")"
     download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
-    SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
-    unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
-    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}"
-    rm -rf "$SDK_TEMP" "$SDK_ZIP"
+    
+    SDK_TARGET="${SDK_LINUX_PATH}/cmdline-tools"
+
+    # ✅ FIX: Skip if already installed to avoid 'Directory not empty' error
+    if [[ -d "$SDK_TARGET" && -f "${SDK_TARGET}/bin/sdkmanager.bat" ]]; then
+        log_info "Android SDK Command Line Tools already installed. Skipping."
+    else
+        # Create parent dir only (NOT the target, so mv can create it cleanly)
+        mkdir -p "$(dirname "$SDK_TARGET")"
+        
+        SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
+        rm -rf "$SDK_TEMP" 2>/dev/null || true
+        unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
+        
+        if [[ -d "${SDK_TEMP}/cmdline-tools" ]]; then
+            mv "${SDK_TEMP}/cmdline-tools" "$SDK_LINUX_PATH"
+            log_success "Android SDK Command Line Tools extracted to ${SDK_WINE_PATH}"
+        else
+            log_warn "Unexpected SDK archive structure. Fallback extraction skipped."
+        fi
+        rm -rf "$SDK_TEMP" "$SDK_ZIP"
+    fi
 
     # Licenses & Resources
     mkdir -p "${SDK_LINUX_PATH}/licenses"
