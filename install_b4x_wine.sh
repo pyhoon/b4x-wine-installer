@@ -235,10 +235,9 @@ if [[ "$INSTALL_B4A" == true ]]; then
     SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
     mkdir -p "$(dirname "$SDK_ZIP")"
     download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
-    mkdir -p "${SDK_LINUX_PATH}/cmdline-tools"
     SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
     unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
-    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}/cmdline-tools"
+    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}"
     rm -rf "$SDK_TEMP" "$SDK_ZIP"
 
     # Licenses & Resources
