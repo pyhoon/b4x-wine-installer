@@ -235,10 +235,10 @@ if [[ "$INSTALL_B4A" == true ]]; then
     SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
     mkdir -p "$(dirname "$SDK_ZIP")"
     download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
-    mkdir -p "${SDK_LINUX_PATH}/cmdline-tools/latest"
+    mkdir -p "${SDK_LINUX_PATH}/cmdline-tools"
     SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
     unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
-    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}/cmdline-tools/latest"
+    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}/cmdline-tools"
     rm -rf "$SDK_TEMP" "$SDK_ZIP"
 
     # Licenses & Resources
@@ -265,9 +265,9 @@ if [[ "$INSTALL_B4A" == true ]]; then
         cat > "$B4A_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
-Name=B4A (Wine)
+Name=B4A
 Comment=B4A IDE - Run via Wine
-Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4A_EXE//\//\\/}"
+Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4A_EXE}"
 Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A
 Icon=${LOCAL_ICON}
 Terminal=false
@@ -307,9 +307,9 @@ if [[ "$INSTALL_B4J" == true ]]; then
         cat > "$B4J_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
-Name=B4J (Wine)
+Name=B4J
 Comment=B4J IDE - Run via Wine
-Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4J_EXE//\//\\/}"
+Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4J_EXE}"
 Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J
 Icon=${LOCAL_ICON}
 Terminal=false
