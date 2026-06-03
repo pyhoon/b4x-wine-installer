@@ -82,10 +82,6 @@ The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. To 
 | `AdditionalLibrariesFolder` | `C:\Additional Libraries` | Shared library folder |
 | `PlatformFolder` (B4A only) | `C:\Android\platforms\android-36` | Android SDK platform ref |
 
-> **💡 Font Requirement:** Install Ubuntu fonts for best experience:
-```sudo apt install fonts-ubuntu-font-family-console```
-
-
 ## 📁 Folder Structure Created
 
 ```
