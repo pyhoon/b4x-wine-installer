@@ -45,14 +45,17 @@
 ```bash
 wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/install_b4x_wine.sh
 chmod +x install_b4x_wine.sh
-```
-```bash
 # Interactive (recommended)
 ./install_b4x_wine.sh
-
+```
+```bash
 # Silent
 ./install_b4x_wine.sh --all          # Install both
+```
+```bash
 ./install_b4x_wine.sh --b4a          # B4A only
+```
+```bash
 ./install_b4x_wine.sh --b4j          # B4J only
 ```
 > 🔐 You'll be prompted for your password when `sudo` is needed.
@@ -75,14 +78,14 @@ The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. Use
    ```bash
    wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4x_settings.sh
    chmod +x configure_b4x_settings.sh
-   ```
-   ```bash
    # Interactive (default)
    ./configure_b4x_settings.sh
-
+   ```
+   ```bash
    # Configure B4A only
    ./configure_b4x_settings.sh --b4a
-
+   ```
+   ```bash
    # Configure both (silent/automated)
    ./configure_b4x_settings.sh --all
    ```
@@ -128,41 +131,29 @@ chmod +x uninstall_b4x_wine.sh
 
 # Interactive (recommended)
 ./uninstall_b4x_wine.sh
-
+```
+```bash
 # Safe preview
 ./uninstall_b4x_wine.sh --dry-run
-
+```
+```bash
 # Keep projects & Wine packages
 ./uninstall_b4x_wine.sh --keep-projects --keep-wine
+```
+```bash
+# Verify cleanup
+ls -la ~/.wine_b4x 2>&1 | grep "No such file" && echo "✓ Prefix removed"
+ls ~/.local/share/applications/ | grep b4a && echo "⚠️ Launcher still exists" || echo "✓ Launcher removed"
 ```
 
 ### Options
 | Flag | Description
 | -------- | -------- |
-`--dry-run` | Preview what will be removed (no changes)
-`--force` | Skip all confirmation prompts ⚠️
-`--keep-projects` | Preserve `~/B4X_Projects` folder
-`--keep-wine` | Don't remove Wine/Winetricks system packages
-`--verbose` | Show detailed removal actions
-
-### Examples
-```bash
-# Preview before deleting
-./uninstall_b4a_wine.sh --dry-run
-
-# Uninstall but keep your projects
-./uninstall_b4a_wine.sh --keep-projects
-
-# Full silent uninstall (use with caution!)
-./uninstall_b4a_wine.sh --force
-
-# Keep both projects AND Wine packages
-./uninstall_b4a_wine.sh --keep-projects --keep-wine
-
-# Verify cleanup
-ls -la ~/.wine_b4x 2>&1 | grep "No such file" && echo "✓ Prefix removed"
-ls ~/.local/share/applications/ | grep b4a && echo "⚠️ Launcher still exists" || echo "✓ Launcher removed"
-```
+| `--dry-run` | Preview what will be removed (no changes) |
+| `--force` | Skip all confirmation prompts ⚠️ |
+| `--keep-projects` | Preserve `~/B4X_Projects` folder |
+| `--keep-wine` | Don't remove Wine/Winetricks system packages |
+| `--verbose` | Show detailed removal actions |
 
 ## 🔍 Troubleshooting
 
