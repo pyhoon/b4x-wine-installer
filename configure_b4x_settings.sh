@@ -157,7 +157,7 @@ B4J_OK=true
 [[ "$DO_B4J" == true ]] && configure_product "B4J" "$B4J_INI_FILE" || B4J_OK=false
 
 # Handle partial failures gracefully
-if [[ "$B4A_OK" == false || "$B4J_OK" == false ]]; then
+if [[ "$DO_B4A" == true && "$B4A_OK" == false || "$DO_B4J" == true && "$B4J_OK" == false ]]; then
     echo -e "\n${RED}⚠️ Some configurations failed. Check the errors above.${NC}\n"
     exit 1
 fi
