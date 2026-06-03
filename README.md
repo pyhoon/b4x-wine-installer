@@ -45,7 +45,8 @@
 ```bash
 wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/install_b4x_wine.sh
 chmod +x install_b4x_wine.sh
-
+```
+```bash
 # Interactive (recommended)
 ./install_b4x_wine.sh
 
@@ -74,7 +75,8 @@ The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. Use
    ```bash
    wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4x_settings.sh
    chmod +x configure_b4x_settings.sh
-
+   ```
+   ```bash
    # Interactive (default)
    ./configure_b4x_settings.sh
 
