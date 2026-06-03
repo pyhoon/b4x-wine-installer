@@ -12,8 +12,11 @@ set -euo pipefail
 # CONFIGURATION
 #-------------------------------------------------------------------------------
 readonly WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
-readonly B4X_PROJECTS_DIR="${B4X_PROJECTS_DIR:-${HOME}/B4X_Projects}"
-readonly B4X_PROJECTS_PATH="Z:\\home\\$(whoami)\\${B4X_PROJECTS_DIR##*/}"
+readonly B4X_PROJECTS_DIR="B4X_Projects"
+readonly B4X_PROJECTS_PATH="Z:\home\\$(whoami)\\${B4X_PROJECTS_DIR}"
+readonly B4X_ADDITIONAL_LIBRARIES="C:\Additional Libraries"
+readonly JAVA_BIN_PATH="C:\Java\jdk-19.0.2\bin"
+readonly ANDROID_SDK_PLATFORM_PATH="C:\Android\platforms\android-36"
 readonly B4A_INI_FILE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Roaming/Anywhere Software/Basic4android/b4xV5.ini"
 
 # Colors
@@ -36,8 +39,18 @@ ini_set() {
         log_info "Please launch B4A at least once first, then run this script again."
         exit 1
     fi
-    if grep -q "^${key}=" "$file" 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+
+    # ✅ Fix 1: Strip UTF-8 BOM if present (invisible bytes at start of Windows INI files)
+    sed -i '1s/^\xEF\xBB\xBF//' "$file"
+    # ✅ Fix 2: Normalize Windows line endings (\r\n -> \n)
+    sed -i 's/\r$//' "$file"
+
+    # Escape backslashes for sed replacement (\ -> \\)
+    local escaped_value="${value//\\/\\\\}"
+
+    # Flexible match: handles spaces around '=' and ignores case
+    if grep -qE "^[[:space:]]*${key}[[:space:]]*=" "$file" 2>/dev/null; then
+        sed -i "s|^[[:space:]]*${key}[[:space:]]*=.*|${key}=${escaped_value}|" "$file"
     else
         echo "${key}=${value}" >> "$file"
     fi
@@ -55,24 +68,25 @@ if [[ ! -f "$B4A_INI_FILE" ]]; then
     echo -e "\n${YELLOW}Please do the following:${NC}"
     echo "  1. Launch B4A from your application menu or desktop"
     echo "  2. Let it fully load (you can close it immediately after)"
-    echo "  3. Run this script again: ./configure_b4a_settings.sh\n"
+    echo "  3. Run this script again: ./configure_b4a_settings.sh"
     exit 1
 fi
 
 log_info "Configuring b4xV5.ini..."
 # Note: Use double backslashes in bash to produce single backslashes in the INI file
+ini_set "$B4A_INI_FILE" "AdditionalLibrariesFolder" "${B4X_ADDITIONAL_LIBRARIES}"
+ini_set "$B4A_INI_FILE" "AutoBackup" "True"
 ini_set "$B4A_INI_FILE" "FontName2" "Ubuntu Sans Mono"
 ini_set "$B4A_INI_FILE" "FontSize2" "15"
 ini_set "$B4A_INI_FILE" "logs_FontName2" "Ubuntu Sans"
 ini_set "$B4A_INI_FILE" "logs_FontSize2" "15"
-ini_set "$B4A_INI_FILE" "JavaBin" "C:\\Java\\jdk-19.0.2\\bin"
+ini_set "$B4A_INI_FILE" "JavaBin" "${JAVA_BIN_PATH}"
 ini_set "$B4A_INI_FILE" "NewProjectDefaultFolder" "${B4X_PROJECTS_PATH}"
-ini_set "$B4A_INI_FILE" "AdditionalLibrariesFolder" "C:\\Additional Libraries"
-ini_set "$B4A_INI_FILE" "PlatformFolder" "C:\\Android\\platforms\\android-36"
+ini_set "$B4A_INI_FILE" "PlatformFolder" "${ANDROID_SDK_PLATFORM_PATH}"
 
 log_success "B4A configuration applied!"
 echo -e "\n${YELLOW}Applied settings:${NC}"
-grep -E "^(AdditionalLibrariesFolder|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder|PlatformFolder)=" "$B4A_INI_FILE" | while read -r line; do
+grep -E "^(AdditionalLibrariesFolder|AutoBackup|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder|PlatformFolder)=" "$B4A_INI_FILE" | while read -r line; do
     echo "  • $line"
 done
 echo -e "\n${GREEN}✨ Configuration complete! Launch B4A to enjoy your optimized settings.${NC}\n"
