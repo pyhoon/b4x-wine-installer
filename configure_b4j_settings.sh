@@ -12,8 +12,10 @@ set -euo pipefail
 # CONFIGURATION
 #-------------------------------------------------------------------------------
 readonly WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
-readonly B4X_PROJECTS_DIR="${B4X_PROJECTS_DIR:-${HOME}/B4X_Projects}"
-readonly B4X_PROJECTS_PATH="Z:\\home\\$(whoami)\\${B4X_PROJECTS_DIR##*/}"
+readonly B4X_PROJECTS_DIR="B4X_Projects"
+readonly B4X_PROJECTS_PATH="Z:\home\\$(whoami)\\${B4X_PROJECTS_DIR}"
+readonly B4X_ADDITIONAL_LIBRARIES="C:\Additional Libraries"
+readonly JAVA_BIN_PATH="C:\Java\jdk-19.0.2\bin"
 readonly B4J_INI_FILE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Roaming/Anywhere Software/B4J/b4xV5.ini"
 
 # Colors
@@ -33,11 +35,21 @@ ini_set() {
     local file="$1" key="$2" value="$3"
     if [[ ! -f "$file" ]]; then
         log_error "INI file not found: $file"
-        log_info "Please launch B4J at least once first, then run this script again."
+        log_info "Please launch B4A at least once first, then run this script again."
         exit 1
     fi
-    if grep -q "^${key}=" "$file" 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+
+    # ✅ Fix 1: Strip UTF-8 BOM if present (invisible bytes at start of Windows INI files)
+    sed -i '1s/^\xEF\xBB\xBF//' "$file"
+    # ✅ Fix 2: Normalize Windows line endings (\r\n -> \n)
+    sed -i 's/\r$//' "$file"
+
+    # Escape backslashes for sed replacement (\ -> \\)
+    local escaped_value="${value//\\/\\\\}"
+
+    # Flexible match: handles spaces around '=' and ignores case
+    if grep -qE "^[[:space:]]*${key}[[:space:]]*=" "$file" 2>/dev/null; then
+        sed -i "s|^[[:space:]]*${key}[[:space:]]*=.*|${key}=${escaped_value}|" "$file"
     else
         echo "${key}=${value}" >> "$file"
     fi
@@ -55,18 +67,18 @@ if [[ ! -f "$B4J_INI_FILE" ]]; then
     echo -e "\n${YELLOW}Please do the following:${NC}"
     echo "  1. Launch B4J from your application menu or desktop"
     echo "  2. Let it fully load (you can close it immediately after)"
-    echo "  3. Run this script again: ./configure_b4j_settings.sh\n"
+    echo "  3. Run this script again: ./configure_b4j_settings.sh"
     exit 1
 fi
 
 log_info "Configuring b4xV5.ini..."
+ini_set "$B4A_INI_FILE" "AdditionalLibrariesFolder" "${B4X_ADDITIONAL_LIBRARIES}"
 ini_set "$B4J_INI_FILE" "FontName2" "Ubuntu Sans Mono"
 ini_set "$B4J_INI_FILE" "FontSize2" "15"
 ini_set "$B4J_INI_FILE" "logs_FontName2" "Ubuntu Sans"
 ini_set "$B4J_INI_FILE" "logs_FontSize2" "15"
-ini_set "$B4J_INI_FILE" "JavaBin" "C:\\Java\\jdk-19.0.2\\bin"
+ini_set "$B4J_INI_FILE" "JavaBin" "${JAVA_BIN_PATH}"
 ini_set "$B4J_INI_FILE" "NewProjectDefaultFolder" "${B4X_PROJECTS_PATH}"
-ini_set "$B4J_INI_FILE" "AdditionalLibrariesFolder" "C:\\Additional Libraries"
 
 log_success "B4J configuration applied!"
 echo -e "\n${YELLOW}Applied settings:${NC}"
