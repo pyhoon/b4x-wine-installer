@@ -173,7 +173,7 @@ Backup first!
 Then re-run the installer script:
 ```./uninstall_b4x_wine.sh --force && ./install_b4x_wine.sh```
 
-## 📚 References & Resources
+## 📚 Resources
 
 - WineHQ Installation Guide for Linux Mint <sup>[linuxcapable.com](https://linuxcapable.com/how-to-install-wine-on-linux-mint/)</sup>
 - B4A on Wine AppDB <sup>[appdb.winehq.org](https://appdb.winehq.org/objectManager.php?sClass=application&iId=18092)</sup>
