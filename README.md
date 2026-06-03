@@ -66,32 +66,33 @@ chmod +x install_b4x_wine.sh
 - **Additional Libraries:** `C:\Additional Libraries\{B4A,B4J,B4X}`
 
 ## ⚙️ Post-Installation Configuration
-The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. To respect this workflow, we provide separate configuration scripts.
+The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. Use the following scrips to apply recommended settings.
 
-### How to Apply Optimized Settings
 1. **Launch B4A once** (from menu or desktop), then close it.
 2. **Launch B4J once**, then close it.
-3. **Run the configurators:**
-   B4A
+3. **Run the configurator:**
    ```bash
-   wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4a_settings.sh
-   chmod +x configure_b4a_settings.sh
-   ./configure_b4a_settings.sh
-   ```
-   B4J
-   ```bash
-   wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4j_settings.sh
-   chmod +x configure_b4j_settings.sh
-   ./configure_b4j_settings.sh
+   wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4x_settings.sh
+   chmod +x configure_b4x_settings.sh
+
+   # Interactive (default)
+   ./configure_b4x_settings.sh
+
+   # Configure B4A only
+   ./configure_b4x_settings.sh --b4a
+
+   # Configure both (silent/automated)
+   ./configure_b4x_settings.sh --all
    ```
 
 ### Applied Settings
 | Setting | Value | Purpose |
 | -------- | ------- | ------- |
+| `AdditionalLibrariesFolder` | `C:\Additional Libraries` | Shared library folder |
 | `FontName2` / `FontSize2` | `Ubuntu Sans Mono` / `15` | Editor readability |
+| `logs_FontName2` / `logs_FontSize2` | `Ubuntu Sans` / `15` | Logs readability |
 | `JavaBin` | `C:\Java\jdk-19.0.2\bin` | JDK compiler path |
 | `NewProjectDefaultFolder` | `Z:\home\USER\B4X_Projects` | Unified Linux-native project storage |
-| `AdditionalLibrariesFolder` | `C:\Additional Libraries` | Shared library folder |
 | `PlatformFolder` (B4A only) | `C:\Android\platforms\android-36` | Android SDK platform ref |
 
 ## 📁 Folder Structure
