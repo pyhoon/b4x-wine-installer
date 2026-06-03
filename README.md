@@ -133,12 +133,20 @@ chmod +x uninstall_b4x_wine.sh
 ./uninstall_b4x_wine.sh
 ```
 ```bash
-# Safe preview
-./uninstall_b4x_wine.sh --dry-run
+# Remove only B4A (keeps B4J & prefix)
+./uninstall_b4x_wine.sh --b4a
 ```
 ```bash
-# Keep projects & Wine packages
-./uninstall_b4x_wine.sh --keep-projects --keep-wine
+# Remove both IDEs but keep the Wine environment
+./uninstall_b4x_wine.sh --both
+```
+```bash
+# Remove everything (prefix, IDEs, launchers, optional Wine)
+./uninstall_b4x_wine.sh --all
+```
+```bash
+# Dry run to preview
+./uninstall_b4x_wine.sh --both --dry-run
 ```
 ```bash
 # Verify cleanup
