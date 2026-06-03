@@ -3,7 +3,7 @@
 # B4X Unified Silent Installer for Linux Mint (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
 # Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026
+# Date: 28 May 2026 (updated on 03 June 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
@@ -11,7 +11,6 @@ set -e  # Exit on error
 #-------------------------------------------------------------------------------
 # 🔧 CONFIGURABLE PATHS & SETTINGS
 # Edit these values OR override via environment variables before running.
-# Example: WINE_PREFIX=/opt/wine/b4x B4A_PROJECTS_DIR=/data/android ./install_b4x_wine.sh --b4a
 #-------------------------------------------------------------------------------
 WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
 WINE_ARCH="win64"
@@ -25,15 +24,16 @@ SDK_RESOURCES_URL="https://github.com/AnywhereSoftware/B4A/releases/download/7_2
 SDK_WINE_PATH="C:\\Android"
 SDK_LINUX_PATH="${WINE_PREFIX}/drive_c/Android"
 B4A_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A"
-B4A_PROJECTS_DIR="${B4A_PROJECTS_DIR:-${HOME}/B4A_Projects}"
 
 # B4J Specific
 B4J_URL="https://www.b4x.com/b4j/files/B4J.exe"
 B4J_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J"
-B4J_PROJECTS_DIR="${B4J_PROJECTS_DIR:-${HOME}/B4J_Projects}"
 
 # Shared Folders
 ADDITIONAL_LIBS_DIR="${WINE_PREFIX}/drive_c/Additional Libraries"
+
+# Projects Directories
+B4X_PROJECTS_DIR="${B4X_PROJECTS_DIR:-${HOME}/B4X_Projects}"
 
 # Desktop Entries & Icons
 B4A_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4a.desktop"
@@ -284,8 +284,6 @@ EOF
         cp "$B4A_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && chmod +x "${HOME}/Desktop/b4a.desktop" 2>/dev/null || true
         log_success "B4A desktop launcher created"
     fi
-
-    mkdir -p "$B4A_PROJECTS_DIR"
 fi
 
 #-------------------------------------------------------------------------------
@@ -328,8 +326,6 @@ EOF
         cp "$B4J_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && chmod +x "${HOME}/Desktop/b4j.desktop" 2>/dev/null || true
         log_success "B4J desktop launcher created"
     fi
-
-    mkdir -p "$B4J_PROJECTS_DIR"
 fi
 
 #-------------------------------------------------------------------------------
@@ -338,8 +334,12 @@ fi
 log_info "Creating Additional Libraries folders..."
 mkdir -p "${ADDITIONAL_LIBS_DIR}/B4A" "${ADDITIONAL_LIBS_DIR}/B4J" "${ADDITIONAL_LIBS_DIR}/B4X"
 
+log_info "Creating B4X Projects folder..."
+mkdir -p "$B4X_PROJECTS_DIR"
+
 log_info "Setting permissions..."
 chmod -R u+rwX "${WINE_PREFIX}" 2>/dev/null || true
+chmod -R u+rwX "$B4X_PROJECTS_DIR" 2>/dev/null || true
 
 #-------------------------------------------------------------------------------
 # 7. Final Messages
@@ -356,8 +356,7 @@ echo -e "\n${YELLOW}⚙️  Configuration Summary:${NC}"
 echo "  • Wine Prefix: ${WINE_PREFIX}"
 echo "  • Java Path: C:\\Java (JDK 19)"
 [[ "$INSTALL_B4A" == true ]] && echo "  • Android SDK: C:\\Android"
-[[ "$INSTALL_B4A" == true ]] && echo "  • B4A Projects: ${B4A_PROJECTS_DIR}"
-[[ "$INSTALL_B4J" == true ]] && echo "  • B4J Projects: ${B4J_PROJECTS_DIR}"
+echo "  • B4X Projects: ${B4X_PROJECTS_DIR}"
 echo "  • Additional Libraries: C:\\Additional Libraries\\{B4A,B4J,B4X}"
 
 echo -e "\n${YELLOW}🚀 Next Steps:${NC}"
