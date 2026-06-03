@@ -1,46 +1,56 @@
 #!/bin/bash
 #===============================================================================
-# B4X Silent Installer for Linux Mint (Wine-based)
-# Installs: Wine, Winetricks, B4A, B4J, JDK19, .NET Framework, VC++ Runtime and configures everything for a smooth B4A and B4J experience on Linux Mint.
-# Author: pyhoon (Aeric)
-# AI Assistant: Qwen3.6 Plus
+# B4X Unified Silent Installer for Linux Mint (Wine-based)
+# Supports: B4A, B4J, or Both in a single Wine prefix.
+# Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
 # Date: 28 May 2026
 # License: MIT
 #===============================================================================
-
 set -e  # Exit on error
 
 #-------------------------------------------------------------------------------
-# CONFIGURATION
+# 🔧 CONFIGURABLE PATHS & SETTINGS
+# Edit these values OR override via environment variables before running.
+# Example: WINE_PREFIX=/opt/wine/b4x B4A_PROJECTS_DIR=/data/android ./install_b4x_wine.sh --b4a
 #-------------------------------------------------------------------------------
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly B4A_URL="https://www.b4x.com/android/files/B4A.exe"
-readonly B4J_URL="https://www.b4x.com/b4j/files/B4J.exe"
-readonly JDK_URL="https://www.b4x.com/b4j/files/jdk-19.0.2.zip"
-readonly WINE_PREFIX="${HOME}/.wine_b4x"
-readonly WINE_ARCH="win64"
-readonly JAVA_WINE_PATH="C:\\Java"
-readonly B4A_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4a.desktop"
-readonly B4J_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4j.desktop"
-readonly B4A_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4A.png"
-readonly B4J_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4J.png"
+WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
+WINE_ARCH="win64"
+JAVA_WINE_PATH="C:\\Java"
+JDK_URL="https://www.b4x.com/b4j/files/jdk-19.0.2.zip"
 
-# Colors for terminal output
+# B4A Specific
+B4A_URL="https://www.b4x.com/android/files/B4A.exe"
+SDK_CMDLINE_URL="https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip"
+SDK_RESOURCES_URL="https://github.com/AnywhereSoftware/B4A/releases/download/7_25/resources_7_25.zip"
+SDK_WINE_PATH="C:\\Android"
+SDK_LINUX_PATH="${WINE_PREFIX}/drive_c/Android"
+B4A_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A"
+B4A_PROJECTS_DIR="${B4A_PROJECTS_DIR:-${HOME}/B4A_Projects}"
+
+# B4J Specific
+B4J_URL="https://www.b4x.com/b4j/files/B4J.exe"
+B4J_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J"
+B4J_PROJECTS_DIR="${B4J_PROJECTS_DIR:-${HOME}/B4J_Projects}"
+
+# Shared Folders
+ADDITIONAL_LIBS_DIR="${WINE_PREFIX}/drive_c/Additional Libraries"
+
+# Desktop Entries & Icons
+B4A_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4a.desktop"
+B4J_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4j.desktop"
+B4A_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4A.png"
+B4J_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4J.png"
+
+# Colors
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+readonly NC='\033[0m'
 
-#-------------------------------------------------------------------------------
-# ANDROID SDK CONFIGURATION
-#-------------------------------------------------------------------------------
-readonly SDK_CMDLINE_URL="https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip"
-readonly SDK_RESOURCES_URL="https://github.com/AnywhereSoftware/B4A/releases/download/7_25/resources_7_25.zip"
-readonly SDK_WINE_PATH="C:\\Android"
-readonly SDK_LINUX_PATH="${WINE_PREFIX}/drive_c/Android"
-readonly B4A_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A"
-readonly B4J_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J"
+# Installation Flags (set by CLI or menu)
+INSTALL_B4A=false
+INSTALL_B4J=false
 
 #-------------------------------------------------------------------------------
 # HELPER FUNCTIONS
@@ -48,12 +58,11 @@ readonly B4J_INSTALL_DIR="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software
 log_info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
 log_warn()    { echo -e "${YELLOW}[!]${NC} $1"; }
-log_error()   { echo -e "${RED}[✗]${NC} $1" >&2; }
+log_error()   { echo -e "${RED}[✗]${NC} $1" >&2; exit 1; }
 
 check_root() {
     if [[ $EUID -eq 0 ]]; then
         log_error "Do not run this script as root. Use sudo only when prompted."
-        exit 1
     fi
 }
 
@@ -64,12 +73,11 @@ check_mint() {
 }
 
 get_ubuntu_codename() {
-    # Linux Mint is based on Ubuntu; WineHQ uses Ubuntu codenames
     local codename
     codename=$(grep '^UBUNTU_CODENAME=' /etc/os-release | cut -d= -f2)
     case "$codename" in
         noble|jammy) echo "$codename" ;;
-        *) log_error "Unsupported Ubuntu base: $codename (Mint 21.x=jammy, 22.x=noble)"; exit 1 ;;
+        *) log_error "Unsupported Ubuntu base: $codename (Mint 21.x=jammy, 22.x=noble)" ;;
     esac
 }
 
@@ -81,63 +89,93 @@ download_file() {
         curl -fSL -o "$dest" "$url"
     else
         log_error "Neither wget nor curl found. Please install one."
-        exit 1
+    fi
+}
+
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  --b4a      Install B4A only"
+    echo "  --b4j      Install B4J only"
+    echo "  --all      Install both B4A & B4J"
+    echo "  -h, --help Show this help message"
+    exit 0
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --b4a) INSTALL_B4A=true; shift ;;
+            --b4j) INSTALL_B4J=true; shift ;;
+            --all) INSTALL_B4A=true; INSTALL_B4J=true; shift ;;
+            -h|--help) show_help ;;
+            *) log_error "Unknown option: $1"; show_help ;;
+        esac
+    done
+}
+
+select_products() {
+    # If flags weren't set via CLI, show interactive menu
+    if [[ "$INSTALL_B4A" == false && "$INSTALL_B4J" == false ]]; then
+        echo -e "\n${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${BLUE}║  Select B4X Product(s) to Install                        ║${NC}"
+        echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
+        
+        PS3="Enter choice: "
+        options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
+        select opt in "${options[@]}"; do
+            case $opt in
+                "B4A Only") INSTALL_B4A=true; break ;;
+                "B4J Only") INSTALL_B4J=true; break ;;
+                "Both B4A & B4J") INSTALL_B4A=true; INSTALL_B4J=true; break ;;
+                "Quit") log_info "Installation cancelled."; exit 0 ;;
+                *) log_warn "Invalid choice. Try again." ;;
+            esac
+        done
+        
+        if [[ "$INSTALL_B4A" == false && "$INSTALL_B4J" == false ]]; then
+            log_error "No product selected."
+        fi
     fi
 }
 
 #-------------------------------------------------------------------------------
 # MAIN INSTALLATION STEPS
 #-------------------------------------------------------------------------------
-
 echo -e "\n${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  B4X Silent Installer for Linux Mint (Wine-based)      ║${NC}"
+echo -e "${BLUE}║  B4X Unified Installer for Linux Mint                  ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
 
 check_root
 check_mint
+parse_args "$@"
+select_products
+
+log_info "Configuration:"
+[[ "$INSTALL_B4A" == true ]] && echo -e "  ${GREEN}• B4A: Enabled${NC}"
+[[ "$INSTALL_B4J" == true ]] && echo -e "  ${GREEN}• B4J: Enabled${NC}"
+echo -e "  ${YELLOW}• Wine Prefix: ${WINE_PREFIX}${NC}"
+echo -e "  ${YELLOW}• Java Path: ${JAVA_WINE_PATH}${NC}"
+[[ "$INSTALL_B4A" == true ]] && echo -e "  ${YELLOW}• Android SDK: ${SDK_WINE_PATH}${NC}"
+[[ "$INSTALL_B4A" == true ]] && echo -e "  ${YELLOW}• B4A Projects: ${B4A_PROJECTS_DIR}${NC}"
+[[ "$INSTALL_B4J" == true ]] && echo -e "  ${YELLOW}• B4J Projects: ${B4J_PROJECTS_DIR}${NC}"
+echo ""
 
 #-------------------------------------------------------------------------------
-# 1. Update system & install prerequisites
-#-------------------------------------------------------------------------------
-log_info "Updating system packages..."
-sudo apt update -qq
-sudo apt upgrade -y -qq
-
-log_info "Installing prerequisites for WineHQ repository..."
-sudo apt install -y ca-certificates curl gnupg software-properties-common apt-transport-https
-
-#-------------------------------------------------------------------------------
-# 2. Enable 32-bit architecture (required for many Windows apps)
+# 1. System & Wine Setup (Shared)
 #-------------------------------------------------------------------------------
 log_info "Enabling 32-bit architecture support..."
 sudo dpkg --add-architecture i386 2>/dev/null || true
 
-#-------------------------------------------------------------------------------
-# 3. Add WineHQ repository & GPG key (with conflict handling)
-#-------------------------------------------------------------------------------
 log_info "Cleaning up any conflicting WineHQ repository configurations..."
-
-# Remove old/conflicting WineHQ source files (both legacy .list and new .sources formats)
-sudo rm -f /etc/apt/sources.list.d/winehq*.sources 2>/dev/null || true
-sudo rm -f /etc/apt/sources.list.d/winehq*.list 2>/dev/null || true
-sudo rm -f /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
-
-# Remove conflicting keyring files
-sudo rm -f /usr/share/keyrings/winehq*.gpg 2>/dev/null || true
-sudo rm -f /etc/apt/keyrings/winehq*.key 2>/dev/null || true
-
-# Clean APT lists to avoid cached errors
+sudo rm -f /etc/apt/sources.list.d/winehq*.sources /etc/apt/sources.list.d/winehq*.list /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
+sudo rm -f /usr/share/keyrings/winehq*.gpg /etc/apt/keyrings/winehq*.key 2>/dev/null || true
 sudo apt clean -qq 2>/dev/null || true
 
 log_info "Adding fresh WineHQ repository..."
 CODENAME=$(get_ubuntu_codename)
-
-# Create keyring directory and import GPG key (DEB822 format)
 sudo install -m 0755 -d /usr/share/keyrings
-curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | \
-    sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
-
-# Add DEB822 format repository file (modern standard)
+curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
 sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
 Types: deb
 URIs: https://dl.winehq.org/wine-builds/ubuntu/
@@ -145,262 +183,94 @@ Suites: ${CODENAME}
 Components: main
 Signed-By: /usr/share/keyrings/winehq.gpg
 EOF
-
 sudo apt update -qq
 
-#-------------------------------------------------------------------------------
-# 4. Install Wine Stable (recommended for production)
-#-------------------------------------------------------------------------------
-log_info "Installing Wine Stable (latest)..."
-sudo apt install -y --install-recommends winehq-stable
-
-# Verify installation
+log_info "Installing Wine Stable & Winetricks..."
+sudo apt install -y --install-recommends winehq-stable winetricks
 WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
 log_success "Wine installed: ${WINE_VERSION}"
 
 #-------------------------------------------------------------------------------
-# 5. Install Winetricks
+# 2. Create & Configure Wine Prefix (Shared)
 #-------------------------------------------------------------------------------
-log_info "Installing Winetricks..."
-sudo apt install -y winetricks
-
-#-------------------------------------------------------------------------------
-# 6. Create dedicated Wine prefix for B4A/B4J (64-bit)
-#-------------------------------------------------------------------------------
-log_info "Creating dedicated 64-bit Wine prefix for B4A/B4J: ${WINE_PREFIX}"
 export WINEARCH="${WINE_ARCH}"
 export WINEPREFIX="${WINE_PREFIX}"
-
-# Initialize prefix (this triggers Mono/Gecko prompts - we'll install manually)
+log_info "Creating/Updating 64-bit Wine prefix: ${WINE_PREFIX}..."
 wineboot -u 2>/dev/null || true
 
-#-------------------------------------------------------------------------------
-# 7. Install Wine Mono & Gecko manually (avoid interactive prompts)
-#-------------------------------------------------------------------------------
-#log_info "Installing Wine Mono and Gecko runtimes..." aeric: skipped, these can cause issues with .NET apps and B4A works better without them. If needed, users can install them manually via winetricks or by downloading the MSI files from WineHQ and installing with 'wine msiexec /i <file.msi> /qn'.
-#MONO_MSI="${WINE_PREFIX}/drive_c/temp/wine-mono.msi"
-#GECKO_X86="${WINE_PREFIX}/drive_c/temp/wine-gecko-x86.msi"
-#GECKO_X64="${WINE_PREFIX}/drive_c/temp/wine-gecko-x64.msi"
-
-#mkdir -p "$(dirname "$MONO_MSI")"
-
-# Download and install Mono
-#download_file "https://dl.winehq.org/wine/wine-mono/11.0.0/wine-mono-11.0.0-x86.msi" "$MONO_MSI"
-#wine msiexec /i "$MONO_MSI" /qn 2>/dev/null || true
-
-# Download and install Gecko (both architectures)
-#download_file "https://dl.winehq.org/wine/wine-gecko/2.47.4/wine-gecko-2.47.4-x86.msi" "$GECKO_X86"
-#download_file "https://dl.winehq.org/wine/wine-gecko/2.47.4/wine-gecko-2.47.4-x86_64.msi" "$GECKO_X64"
-#wine msiexec /i "$GECKO_X86" /qn 2>/dev/null || true
-#wine msiexec /i "$GECKO_X64" /qn 2>/dev/null || true
-
-# Cleanup temp files
-#rm -f "$MONO_MSI" "$GECKO_X86" "$GECKO_X64"
-
-#-------------------------------------------------------------------------------
-# 8. Install required Windows components via Winetricks
-#-------------------------------------------------------------------------------
-log_info "Installing VC++ 2010 Runtime via Winetricks..."
-winetricks -q vcrun2010 2>/dev/null || {
-    log_warn "Failed to install VC++ 2010 Runtime. B4A may still work, but some features could be affected."
-}
-
-log_info "Installing .NET Framework 4.5.2 via Winetricks..."
-winetricks -q dotnet452 2>/dev/null || {
-    log_warn "Failed to install .NET Framework 4.5.2. B4A may still work, but some features could be affected."
-}
-
-log_info "Installing DXVK (DirectX 11/12 support) via Winetricks..."
-winetricks -q dxvk 2>/dev/null || {
-    log_warn "Failed to install DXVK. JavaFX graphics performance may be reduced, but B4A should still function."
-}
-
-log_info "Setting GDI renderer to 'gdi' for better compatibility with B4A..."
-winetricks -q renderer=gdi 2>/dev/null || {
-    log_warn "Failed to set GDI renderer. If you experience graphical issues, try running 'winetricks renderer=gdi' manually in the prefix."
-}
-
-#-------------------------------------------------------------------------------
-# 9. Configure Windows version to Windows 10 (recommended for .NET apps)
-#-------------------------------------------------------------------------------
-log_info "Setting Windows version to Windows 10..."
+log_info "Installing shared dependencies (VC++ 2010, .NET 4.5.2, DXVK, GDI)..."
+winetricks -q vcrun2010 dotnet452 dxvk renderer=gdi 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
 winecfg -v win10 2>/dev/null || true
 
 #-------------------------------------------------------------------------------
-# 10. Download and install B4A
+# 3. Install JDK 19 (Shared)
 #-------------------------------------------------------------------------------
-log_info "Downloading B4A installer..."
-B4A_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4A.exe"
-mkdir -p "$(dirname "$B4A_INSTALLER")"
-download_file "${B4A_URL}" "$B4A_INSTALLER"
-
-log_info "Installing B4A silently..."
-# B4A installer supports /SILENT or /VERYSILENT (Inno Setup)
-wine "$B4A_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || {
-    log_warn "Silent install failed, trying interactive mode..."
-    wine "$B4A_INSTALLER" 2>/dev/null || log_error "B4A installation failed"
-}
-
-#-------------------------------------------------------------------------------
-# 11. Download and install B4J
-#-------------------------------------------------------------------------------
-log_info "Downloading B4J installer..."
-B4J_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4J.exe"
-mkdir -p "$(dirname "$B4J_INSTALLER")"
-download_file "${B4J_URL}" "$B4J_INSTALLER"
-
-log_info "Installing B4J silently..."
-# B4J installer supports /SILENT or /VERYSILENT (Inno Setup)
-wine "$B4J_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || {
-    log_warn "Silent install failed, trying interactive mode..."
-    wine "$B4J_INSTALLER" 2>/dev/null || log_error "B4J installation failed"
-}
-
-#-------------------------------------------------------------------------------
-# 12. Download and extract JDK19 to C:\Java in Wine prefix
-#-------------------------------------------------------------------------------
-log_info "Downloading JDK19..."
+log_info "Downloading & extracting JDK 19 to C:\\Java..."
+mkdir -p "${WINE_PREFIX}/drive_c/Java"
 JDK_ZIP="${WINE_PREFIX}/drive_c/temp/jdk-19.0.2.zip"
 mkdir -p "$(dirname "$JDK_ZIP")"
 download_file "${JDK_URL}" "$JDK_ZIP"
 
-log_info "Extracting JDK19 to ${JAVA_WINE_PATH}..."
-# Create target directory in Wine C: drive
-wine cmd /c "mkdir ${JAVA_WINE_PATH//\\//}" 2>/dev/null || mkdir -p "${WINE_PREFIX}/drive_c/Java"
-
-# Extract using unzip (Linux native, then copy to Wine prefix)
 JDK_EXTRACT_DIR="${WINE_PREFIX}/drive_c/temp/jdk_extract"
 mkdir -p "$JDK_EXTRACT_DIR"
 unzip -q "$JDK_ZIP" -d "$JDK_EXTRACT_DIR"
-
-# Move extracted JDK to C:\Java
 JDK_SRC=$(find "$JDK_EXTRACT_DIR" -maxdepth 1 -type d -name "jdk*" | head -1)
 if [[ -n "$JDK_SRC" && -d "$JDK_SRC" ]]; then
-    cp -r "$JDK_SRC"/* "${WINE_PREFIX}/drive_c/Java/" 2>/dev/null || true
-    log_success "JDK19 extracted to ${JAVA_WINE_PATH}"
+    cp -r "$JDK_SRC"/* "${WINE_PREFIX}/drive_c/Java/"
+    log_success "JDK 19 installed to C:\\Java"
 else
     log_warn "Could not locate JDK folder in archive"
 fi
-
-# Cleanup
 rm -rf "$JDK_EXTRACT_DIR" "$JDK_ZIP"
 
 #-------------------------------------------------------------------------------
-# 13. Download and install Android SDK Command Line Tools
+# 4. B4A Installation (Conditional)
 #-------------------------------------------------------------------------------
-log_info "Downloading Android SDK Command Line Tools..."
-SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
-mkdir -p "$(dirname "$SDK_ZIP")"
-download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
+if [[ "$INSTALL_B4A" == true ]]; then
+    log_info ">>> Installing B4A..."
+    B4A_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4A.exe"
+    mkdir -p "$(dirname "$B4A_INSTALLER")"
+    download_file "${B4A_URL}" "$B4A_INSTALLER"
+    wine "$B4A_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || wine "$B4A_INSTALLER" 2>/dev/null || log_warn "B4A installation failed"
 
-log_info "Extracting Android SDK to ${SDK_WINE_PATH}..."
-# Create target directory directly in Wine prefix
-mkdir -p "${SDK_LINUX_PATH}/cmdline-tools"
+    # Android SDK
+    log_info "Setting up Android SDK..."
+    SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
+    mkdir -p "$(dirname "$SDK_ZIP")"
+    download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
+    mkdir -p "${SDK_LINUX_PATH}/cmdline-tools/latest"
+    SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
+    unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
+    [[ -d "${SDK_TEMP}/cmdline-tools" ]] && mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}/cmdline-tools/latest"
+    rm -rf "$SDK_TEMP" "$SDK_ZIP"
 
-# Extract to temp location first
-SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
-mkdir -p "$SDK_TEMP"
-unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
-
-# Android SDK expects: C:\Android\cmdline-tools\
-# The zip extracts to /home/USER/.wine_b4x/drive_c/Android/cmdline-tools/ with bin/, lib/, etc.
-if [[ -d "${SDK_TEMP}/cmdline-tools" ]]; then
-    mv "${SDK_TEMP}/cmdline-tools" "${SDK_LINUX_PATH}/cmdline-tools"
-    log_success "Android SDK Command Line Tools extracted to ${SDK_WINE_PATH}"
-else
-    log_warn "Unexpected SDK archive structure. Attempting fallback extraction..."
-    # Fallback: move whatever was extracted
-    find "${SDK_TEMP}" -mindepth 1 -maxdepth 1 -exec mv -t "${SDK_LINUX_PATH}/cmdline-tools/" {} + 2>/dev/null || true
-fi
-
-# Cleanup temp files
-rm -rf "${SDK_TEMP}" "${SDK_ZIP}"
-
-#-------------------------------------------------------------------------------
-# 14. Accept Android SDK Licenses (silent)
-#-------------------------------------------------------------------------------
-log_info "Accepting Android SDK licenses..."
-export WINEPREFIX="${WINE_PREFIX}"
-export JAVA_HOME="${WINE_PREFIX}/drive_c/Java"  # Use the JDK we installed earlier
-
-# Create licenses directory (required for sdkmanager)
-mkdir -p "${SDK_LINUX_PATH}/licenses"
-
-# Pre-accept common licenses by creating license files
-# This avoids interactive prompts from sdkmanager --licenses
-cat > "${SDK_LINUX_PATH}/licenses/android-sdk-license" <<'EOF'
-24333f8a63b6825ea9c5514f83c2829b004d1fee
-EOF
-
-cat > "${SDK_LINUX_PATH}/licenses/android-sdk-preview-license" <<'EOF'
-84831b9409646a918e30573bab4c9c91346d8abd
-EOF
-
-cat > "${SDK_LINUX_PATH}/licenses/google-gdk-license" <<'EOF'
-33b6a2b64607f11b759f320ef9dff4ae5c47d97a
-EOF
-
-log_success "Android SDK licenses pre-accepted"
-
-# Optional: Verify sdkmanager works (non-blocking)
-if command -v wine &>/dev/null; then
-    wine "${SDK_LINUX_PATH}/cmdline-tools/bin/sdkmanager.bat" --list 2>/dev/null | head -5 >/dev/null && \
-        log_success "sdkmanager is functional" || \
-        log_warn "sdkmanager verification skipped (may need first-run initialization)"
-fi
-
-#-------------------------------------------------------------------------------
-# 15. Download and install B4A Required Resources
-#-------------------------------------------------------------------------------
-log_info "Downloading B4A Required Resources (7_25)..."
-RESOURCES_ZIP="${WINE_PREFIX}/drive_c/temp/resources_7_25.zip"
-download_file "${SDK_RESOURCES_URL}" "$RESOURCES_ZIP"
-
-log_info "Extracting B4A Resources to Android SDK folder..."
-# Extract directly to Android SDK directory
-if [[ -d "$SDK_LINUX_PATH" ]]; then
-    unzip -q -o "$RESOURCES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null && \
-        log_success "B4A Resources extracted to ${SDK_LINUX_PATH}" || \
-        log_warn "Failed to extract B4A Resources. You may need to extract manually."
-else
-    log_warn "Android SDK directory not found: ${SDK_LINUX_PATH}"
-    log_info "You can extract ${RESOURCES_ZIP} manually to your Android SDK folder later."
-fi
-
-# Cleanup
-rm -f "$RESOURCES_ZIP"
-
-#-------------------------------------------------------------------------------
-# 16. Create desktop shortcut/launcher for B4A
-#-------------------------------------------------------------------------------
-log_info "Creating desktop launcher for B4A..."
-
-# Find B4A executable (common install locations)
-B4A_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A/B4A.exe"
-[[ ! -f "$B4A_EXE" ]] && B4A_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4A/B4A.exe"
-[[ ! -f "$B4A_EXE" ]] && B4A_EXE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Local/Programs/B4A/B4A.exe"
-
-if [[ -f "$B4A_EXE" ]]; then
-    # Download icon (optional)
-    ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4a_icon.png"
-    mkdir -p "$(dirname "$ICON_PATH")"
-    download_file "${B4A_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
+    # Licenses & Resources
+    mkdir -p "${SDK_LINUX_PATH}/licenses"
+    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "${SDK_LINUX_PATH}/licenses/android-sdk-license"
+    echo "84831b9409646a918e30573bab4c9c91346d8abd" > "${SDK_LINUX_PATH}/licenses/android-sdk-preview-license"
     
-    # Convert to local path for .desktop file
-    LOCAL_ICON="${HOME}/.local/share/icons/b4a.png"
-    mkdir -p "$(dirname "$LOCAL_ICON")"
-    if [[ -n "$ICON_PATH" && -f "$ICON_PATH" ]]; then
-        cp "$ICON_PATH" "$LOCAL_ICON" 2>/dev/null || true
-    fi
-    
-    # Create .desktop file
-    mkdir -p "$(dirname "$B4A_DESKTOP_ENTRY")"
-    cat > "$B4A_DESKTOP_ENTRY" <<EOF
+    RES_ZIP="${WINE_PREFIX}/drive_c/temp/resources_7_25.zip"
+    download_file "${SDK_RESOURCES_URL}" "$RES_ZIP"
+    unzip -q -o "$RES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null || true
+    rm -f "$RES_ZIP"
+
+    # Launcher
+    B4A_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A/B4A.exe"
+    [[ ! -f "$B4A_EXE" ]] && B4A_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4A/B4A.exe"
+    if [[ -f "$B4A_EXE" ]]; then
+        ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4a_icon.png"
+        mkdir -p "$(dirname "$ICON_PATH")"
+        download_file "${B4A_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
+        LOCAL_ICON="${HOME}/.local/share/icons/b4a.png"
+        mkdir -p "$(dirname "$LOCAL_ICON")"
+        [[ -f "$ICON_PATH" ]] && cp "$ICON_PATH" "$LOCAL_ICON" 2>/dev/null || true
+        
+        cat > "$B4A_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
-Name=B4A
+Name=B4A (Wine)
 Comment=B4A IDE - Run via Wine
-Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4A_EXE}"
+Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4A_EXE//\//\\/}"
 Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A
 Icon=${LOCAL_ICON}
 Terminal=false
@@ -409,51 +279,42 @@ Categories=Development;IDE;
 Keywords=B4A;B4X;Java;IDE;Basic;
 StartupNotify=true
 EOF
-    
-    # Make executable and update desktop database
-    chmod +x "$B4A_DESKTOP_ENTRY"
-    update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
-    
-    # Also copy to Desktop for convenience
-    cp "$B4A_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
-        chmod +x "${HOME}/Desktop/b4a.desktop" 2>/dev/null || true
-    
-    log_success "Desktop launcher (B4A) created: ${B4A_DESKTOP_ENTRY}"
-else
-    log_warn "B4A.exe not found at expected locations. Launcher creation skipped."
+        chmod +x "$B4A_DESKTOP_ENTRY"
+        update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
+        cp "$B4A_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && chmod +x "${HOME}/Desktop/b4a.desktop" 2>/dev/null || true
+        log_success "B4A desktop launcher created"
+    fi
+
+    mkdir -p "$B4A_PROJECTS_DIR"
 fi
 
 #-------------------------------------------------------------------------------
-# 17. Create desktop shortcut/launcher for B4J
+# 5. B4J Installation (Conditional)
 #-------------------------------------------------------------------------------
-log_info "Creating desktop launcher for B4J..."
+if [[ "$INSTALL_B4J" == true ]]; then
+    log_info ">>> Installing B4J..."
+    B4J_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4J.exe"
+    mkdir -p "$(dirname "$B4J_INSTALLER")"
+    download_file "${B4J_URL}" "$B4J_INSTALLER"
+    wine "$B4J_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || wine "$B4J_INSTALLER" 2>/dev/null || log_warn "B4J installation failed"
 
-# Find B4J executable (common install locations)
-B4J_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J/B4J.exe"
-[[ ! -f "$B4J_EXE" ]] && B4J_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4J/B4J.exe"
-[[ ! -f "$B4J_EXE" ]] && B4J_EXE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Local/Programs/B4J/B4J.exe"
-
-if [[ -f "$B4J_EXE" ]]; then
-    # Download icon (optional)
-    ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4j_icon.png"
-    mkdir -p "$(dirname "$ICON_PATH")"
-    download_file "${B4J_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
-    
-    # Convert to local path for .desktop file
-    LOCAL_ICON="${HOME}/.local/share/icons/b4j.png"
-    mkdir -p "$(dirname "$LOCAL_ICON")"
-    if [[ -n "$ICON_PATH" && -f "$ICON_PATH" ]]; then
-        cp "$ICON_PATH" "$LOCAL_ICON" 2>/dev/null || true
-    fi
-    
-    # Create .desktop file
-    mkdir -p "$(dirname "$B4J_DESKTOP_ENTRY")"
-    cat > "$B4J_DESKTOP_ENTRY" <<EOF
+    # Launcher
+    B4J_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J/B4J.exe"
+    [[ ! -f "$B4J_EXE" ]] && B4J_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4J/B4J.exe"
+    if [[ -f "$B4J_EXE" ]]; then
+        ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4j_icon.png"
+        mkdir -p "$(dirname "$ICON_PATH")"
+        download_file "${B4J_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
+        LOCAL_ICON="${HOME}/.local/share/icons/b4j.png"
+        mkdir -p "$(dirname "$LOCAL_ICON")"
+        [[ -f "$ICON_PATH" ]] && cp "$ICON_PATH" "$LOCAL_ICON" 2>/dev/null || true
+        
+        cat > "$B4J_DESKTOP_ENTRY" <<EOF
 [Desktop Entry]
 Version=1.0
-Name=B4J
+Name=B4J (Wine)
 Comment=B4J IDE - Run via Wine
-Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4J_EXE}"
+Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4J_EXE//\//\\/}"
 Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J
 Icon=${LOCAL_ICON}
 Terminal=false
@@ -462,91 +323,48 @@ Categories=Development;IDE;
 Keywords=B4J;B4X;Java;IDE;Basic;
 StartupNotify=true
 EOF
-    
-    # Make executable and update desktop database
-    chmod +x "$B4J_DESKTOP_ENTRY"
-    update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
-    
-    # Also copy to Desktop for convenience
-    cp "$B4J_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && \
-        chmod +x "${HOME}/Desktop/b4j.desktop" 2>/dev/null || true
-    
-    log_success "Desktop launcher (B4J) created: ${B4J_DESKTOP_ENTRY}"
-else
-    log_warn "B4J.exe not found at expected locations. Launcher creation skipped."
+        chmod +x "$B4J_DESKTOP_ENTRY"
+        update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
+        cp "$B4J_DESKTOP_ENTRY" "${HOME}/Desktop/" 2>/dev/null && chmod +x "${HOME}/Desktop/b4j.desktop" 2>/dev/null || true
+        log_success "B4J desktop launcher created"
+    fi
+
+    mkdir -p "$B4J_PROJECTS_DIR"
 fi
 
 #-------------------------------------------------------------------------------
-# 18. Create optional folders: Additional Libraries & Projects
+# 6. Shared Folders & Permissions
 #-------------------------------------------------------------------------------
-log_info "Creating optional folder structure..."
-
-# Create "Additional Libraries" folder in ~/.wine_b4x/drive_c with B4X subfolders
-ADDITIONAL_LIBS_DIR="${WINE_PREFIX}/drive_c/Additional Libraries"
+log_info "Creating Additional Libraries folders..."
 mkdir -p "${ADDITIONAL_LIBS_DIR}/B4A" "${ADDITIONAL_LIBS_DIR}/B4J" "${ADDITIONAL_LIBS_DIR}/B4X"
-log_success "Created C:\\Additional Libraries\\{B4A,B4J,B4X}"
 
-# Create "Projects" folder in user's home directory
-PROJECTS_DIR="${HOME}/B4X_Projects"
-mkdir -p "$PROJECTS_DIR"
-log_success "Created Projects folder: ${PROJECTS_DIR}"
-
-#-------------------------------------------------------------------------------
-# 19. Set permissions on Wine prefix and folders
-#-------------------------------------------------------------------------------
-log_info "Setting appropriate permissions..."
+log_info "Setting permissions..."
 chmod -R u+rwX "${WINE_PREFIX}" 2>/dev/null || true
-chmod 755 "$PROJECTS_DIR" 2>/dev/null || true
 
 #-------------------------------------------------------------------------------
-# 20. Final configuration tips & messages
+# 7. Final Messages
 #-------------------------------------------------------------------------------
 echo -e "\n${GREEN}════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}  ✓ B4X Installation Complete!${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════${NC}\n"
 
-echo -e "${YELLOW}📋 Quick Start:${NC}"
-echo "  1. Launch B4A/B4J from your application menu or desktop"
-echo "  2. Let it fully initialize (creates b4xV5.ini config file)"
-echo "  3. (Optional) Run post-install configuration:"
-echo "     ./configure_b4a_settings.sh"
-echo "     or"
-echo "     ./configure_b4j_settings.sh"
-echo "  4. Start coding! 🚀"
-echo ""
-echo -e "${YELLOW}⚙️  Important Paths:${NC}"
-echo "  • Java Compiler: ${JAVA_WINE_PATH}\\jdk-19.0.2\\bin\\javac.exe"
-echo "  • Android SDK: ${SDK_WINE_PATH}"
-echo "  • Additional Libraries: C:\\Additional Libraries\\{B4A,B4J,B4X}"
-echo "  • Projects Folder: ${PROJECTS_DIR}"
-echo ""
-echo -e "${YELLOW}🔧 First Launch Tips:${NC}"
-echo "  • In B4A: Tools → Configure Paths → Verify:"
-echo "    - Android SDK: ${SDK_WINE_PATH}"
-echo "    - Java Home: ${JAVA_WINE_PATH}"
-echo "  • The post-install script will auto-configure:"
-echo "    - Editor fonts (Ubuntu Sans Mono, size 15)"
-echo "    - Default project folder (Linux-native via Z: drive)"
-echo "    - Additional Libraries path"
-echo ""
-echo -e "${YELLOW}📁 Available Scripts:${NC}"
-echo "  • Installer: ./install_b4x_wine.sh"
-echo "  • Uninstaller: ./uninstall_b4x_wine.sh"
-echo "  • Configurator: ./configure_b4a_settings.sh ← Run after first B4A launch"
-echo "  • Configurator: ./configure_b4j_settings.sh ← Run after first B4J launch"
-echo ""
-echo -e "${YELLOW}🔧 Troubleshooting:${NC}"
-echo "  • B4A won't start? Try: winetricks -q dotnet452 gdiplus"
-echo "  • SDK not found? Verify path in Tools → Configure Paths"
-echo "  • Font issues? Install fonts: sudo apt install fonts-ubuntu-font-family-console"
-echo "  • Reset everything? Run ./uninstall_b4x_wine.sh --force && ./install_b4x_wine.sh"
-echo ""
-echo -e "${YELLOW}📚 Resources:${NC}"
-echo "  • B4A Documentation: https://www.b4x.com/android/documentation.html"
-echo "  • B4J Documentation: https://www.b4x.com/b4j/documentation.html"
-echo "  • Android SDK: https://developer.android.com/studio#command-tools"
-echo "  • B4X Forum: https://www.b4x.com/android/forum/pages/results/?query=wine"
-echo ""
-echo -e "${GREEN}Happy B4X development on Linux Mint! 🤖🐧☕${NC}\n"
+echo -e "${YELLOW}📋 Installed Products:${NC}"
+[[ "$INSTALL_B4A" == true ]] && echo "  • B4A (Android Development)"
+[[ "$INSTALL_B4J" == true ]] && echo "  • B4J (Desktop/Web Development)"
 
+echo -e "\n${YELLOW}⚙️  Configuration Summary:${NC}"
+echo "  • Wine Prefix: ${WINE_PREFIX}"
+echo "  • Java Path: C:\\Java (JDK 19)"
+[[ "$INSTALL_B4A" == true ]] && echo "  • Android SDK: C:\\Android"
+[[ "$INSTALL_B4A" == true ]] && echo "  • B4A Projects: ${B4A_PROJECTS_DIR}"
+[[ "$INSTALL_B4J" == true ]] && echo "  • B4J Projects: ${B4J_PROJECTS_DIR}"
+echo "  • Additional Libraries: C:\\Additional Libraries\\{B4A,B4J,B4X}"
+
+echo -e "\n${YELLOW}🚀 Next Steps:${NC}"
+echo "  1. Launch B4A/B4J from your Application Menu."
+echo "  2. In B4A: Tools → Configure Paths → Set Java Home to C:\\Java & SDK to C:\\Android"
+echo "  3. In B4J: Tools → Configure Paths → Set Java Home to C:\\Java"
+echo "  4. (Optional) Run ./configure_b4a_settings.sh after first B4A launch to optimize fonts/paths."
+
+echo -e "\n${GREEN}Happy B4X development on Linux Mint! 🤖🐧☕${NC}\n"
 exit 0
