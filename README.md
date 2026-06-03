@@ -149,11 +149,16 @@ ls ~/.local/share/applications/ | grep b4a && echo "⚠️ Launcher still exists
 ### Options
 | Flag | Description
 | -------- | -------- |
-| `--dry-run` | Preview what will be removed (no changes) |
-| `--force` | Skip all confirmation prompts ⚠️ |
-| `--keep-projects` | Preserve `~/B4X_Projects` folder |
-| `--keep-wine` | Don't remove Wine/Winetricks system packages |
-| `--verbose` | Show detailed removal actions |
+| `--b4a` | Uninstall B4A only (keeps B4J & shared prefix) |
+| `--b4j` | Uninstall B4J only (keeps B4A & shared prefix) |
+| `--both` | Uninstall both IDEs (keeps shared prefix) |
+| `--all` | Uninstall everything (prefix, IDEs, launchers, optional Wine) |
+| `-d`, `--dry-run` | Preview what will be removed (no changes) |
+| `-f`, `--force` | Skip all confirmation prompts ⚠️ |
+| `-p`, `--keep-projects` | Preserve `~/B4X_Projects` folder |
+| `-w`, `--keep-wine` | Don't remove Wine/Winetricks system packages |
+| `-v`, `--verbose` | Show detailed removal actions |
+| `-h`, `--help` | Show this help message |
 
 ## 🔍 Troubleshooting
 
