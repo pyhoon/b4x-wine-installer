@@ -66,7 +66,7 @@ chmod +x install_b4x_wine.sh
 - **Additional Libraries:** `C:\Additional Libraries\{B4A,B4J,B4X}`
 
 ## ⚙️ Post-Installation Configuration
-The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. Use the following scrips to apply recommended settings.
+The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. Use the following script to apply recommended settings.
 
 1. **Launch B4A once** (from menu or desktop), then close it.
 2. **Launch B4J once**, then close it.
