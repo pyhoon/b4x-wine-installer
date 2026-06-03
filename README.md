@@ -11,7 +11,7 @@
 ## 📑 Table of Contents
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
-- [⚙️ Configuration Details](#️%EF%B8%8F-configuration-details)
+- [⚙️ Configuration Details](#️-configuration-details)
 - [📁 Folder Structure](#-folder-structure)
 - [🗑️ Uninstall](#%EF%B8%8F-uninstall)
 - [🔍 Troubleshooting](#-troubleshooting)
