@@ -195,7 +195,8 @@ Then re-run the installer script:
 ### rundll32.exe - This application cannot be started. Do you want to view information about this issue?
 You may see this error when reinstall. Just click No. It will pops up again. Click No again.
 
-
+### mv: cannot overwrite '/home/USER/.wine_b4x/drive_c/Android/cmdline-tools': Directory not empty
+Manually delete the cmdline-tools folder and run installer again.
 
 ## 📚 Resources
 
