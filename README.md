@@ -8,6 +8,10 @@
 
 🎯 Install **B4A** and **B4J** on Linux Mint using Wine with a single, configurable script.
 
+![logo](icons/Combo.png)
+![screenshot1](screenshots/Screenshot1.png)
+![screenshot2](screenshots/Screenshot2.png)
+
 ## 📑 Table of Contents
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
