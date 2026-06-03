@@ -79,6 +79,7 @@ get_prefix_size() {
     [[ -d "$WINE_PREFIX" ]] && du -sh "$WINE_PREFIX" 2>/dev/null | cut -f1 || echo "0B"
 }
 
+# ✅ SINGLE ARGUMENT PARSER (Called only once)
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -86,11 +87,11 @@ parse_args() {
             --b4j) UNINSTALL_B4J=true; shift ;;
             --both) UNINSTALL_B4A=true; UNINSTALL_B4J=true; shift ;;
             --all|--everything) UNINSTALL_ALL=true; shift ;;
-            -d|--dry-run) DRY_RUN=true; log_info "🔍 DRY RUN MODE - No changes will be made" ;;
-            -f|--force) FORCE=true; log_warn "⚠️ FORCE MODE - Skipping confirmations" ;;
-            -p|--keep-projects) KEEP_PROJECTS=true; log_info "📁 Will keep ${B4X_PROJECTS_DIR}" ;;
-            -w|--keep-wine) KEEP_WINE=true; log_info "🍷 Will keep Wine system packages" ;;
-            -v|--verbose) set -x ;;
+            -d|--dry-run) DRY_RUN=true; shift ;;  # Do NOT log here to prevent duplicates
+            -f|--force) FORCE=true; shift ;;
+            -p|--keep-projects) KEEP_PROJECTS=true; shift ;;
+            -w|--keep-wine) KEEP_WINE=true; shift ;;
+            -v|--verbose) set -x; shift ;;
             -h|--help) usage ;;
             *) log_error "Unknown option: $1"; usage ;;
         esac
@@ -98,6 +99,7 @@ parse_args() {
 }
 
 select_target() {
+    # If flags were set via CLI, skip menu
     if [[ "$UNINSTALL_B4A" == true || "$UNINSTALL_B4J" == true || "$UNINSTALL_ALL" == true ]]; then
         return
     fi
@@ -230,6 +232,11 @@ do_full_uninstall() {
 #-------------------------------------------------------------------------------
 parse_args "$@"
 select_target
+
+# ✅ LOG MESSAGE PLACED HERE (After parsing is complete) to ensure it prints exactly once
+if [[ "$DRY_RUN" == true ]]; then
+    log_info "🔍 DRY RUN MODE - No changes will be made"
+fi
 
 echo -e "\n${RED}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${RED}║  B4X Wine Uninstaller for Linux Mint                   ║${NC}"
