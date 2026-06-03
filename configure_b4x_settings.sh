@@ -125,7 +125,6 @@ configure_product() {
 
     # Apply shared settings
     ini_set "$ini_file" "AdditionalLibrariesFolder" "${B4X_ADDITIONAL_LIBRARIES}"
-    ini_set "$ini_file" "AutoBackup" "True"
     ini_set "$ini_file" "FontName2" "Ubuntu Sans Mono"
     ini_set "$ini_file" "FontSize2" "15"
     ini_set "$ini_file" "logs_FontName2" "Ubuntu Sans"
@@ -164,10 +163,10 @@ fi
 
 echo -e "\n${YELLOW}✅ Applied settings:${NC}"
 if [[ "$DO_B4A" == true && -f "$B4A_INI_FILE" ]]; then
-    grep -E "^(AdditionalLibrariesFolder|AutoBackup|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder|PlatformFolder)=" "$B4A_INI_FILE" | sed 's/^/  • [B4A] /'
+    grep -E "^(AdditionalLibrariesFolder|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder|PlatformFolder)=" "$B4A_INI_FILE" | sed 's/^/  • [B4A] /'
 fi
 if [[ "$DO_B4J" == true && -f "$B4J_INI_FILE" ]]; then
-    grep -E "^(AdditionalLibrariesFolder|AutoBackup|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder)=" "$B4J_INI_FILE" | sed 's/^/  • [B4J] /'
+    grep -E "^(AdditionalLibrariesFolder|FontName2|FontSize2|JavaBin|logs_FontName2|logs_FontSize2|NewProjectDefaultFolder)=" "$B4J_INI_FILE" | sed 's/^/  • [B4J] /'
 fi
 
 echo -e "\n${GREEN}✨ Configuration complete! Launch B4X IDEs to enjoy your optimized settings.${NC}\n"
