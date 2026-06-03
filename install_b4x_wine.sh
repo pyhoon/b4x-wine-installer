@@ -155,8 +155,7 @@ log_info "Configuration:"
 echo -e "  ${YELLOW}• Wine Prefix: ${WINE_PREFIX}${NC}"
 echo -e "  ${YELLOW}• Java Path: ${JAVA_WINE_PATH}${NC}"
 [[ "$INSTALL_B4A" == true ]] && echo -e "  ${YELLOW}• Android SDK: ${SDK_WINE_PATH}${NC}"
-[[ "$INSTALL_B4A" == true ]] && echo -e "  ${YELLOW}• B4A Projects: ${B4A_PROJECTS_DIR}${NC}"
-[[ "$INSTALL_B4J" == true ]] && echo -e "  ${YELLOW}• B4J Projects: ${B4J_PROJECTS_DIR}${NC}"
+echo -e "  ${YELLOW}• B4X Projects: ${B4X_PROJECTS_DIR}${NC}"
 echo ""
 
 #-------------------------------------------------------------------------------
