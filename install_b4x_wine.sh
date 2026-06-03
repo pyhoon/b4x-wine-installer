@@ -375,10 +375,10 @@ echo "  • Additional Libraries: C:\\Additional Libraries\\{B4A,B4J,B4X}"
 
 echo -e "\n${YELLOW}🚀 Next Steps:${NC}"
 echo "  1. Launch B4A/B4J from your Desktop shortcut or Application Menu."
-echo "  2. In B4A: Tools → Configure Paths → Set `javac.exe` to C:\Java\jdk-19.0.2\bin\javac.exe & `android.jar` to C:\Android\platforms\android-36\android.jar"
-echo "  3. In B4J: Tools → Configure Paths → Set `javac.exe` to C:\Java\jdk-19.0.2\bin\javac.exe"
-echo "  4. (Optional) In B4A/B4J: Tools → Configure Paths → Set `Additional Libraries` path to C:\Additional Libraries"
-echo "  4. (Optional) Run ./configure_b4x_settings.sh after first B4A/B4J launch to set recommended settings."
+echo "  2. In B4A: Tools → Configure Paths → Set javac.exe to C:\Java\jdk-19.0.2\bin\javac.exe & android.jar to C:\Android\platforms\android-36\android.jar"
+echo "  3. In B4J: Tools → Configure Paths → Set javac.exe to C:\Java\jdk-19.0.2\bin\javac.exe"
+echo "  4. (Optional) In B4A/B4J: Tools → Configure Paths → Set Additional Libraries path to C:\Additional Libraries"
+echo "  5. (Optional) Run ./configure_b4x_settings.sh after first B4A/B4J launch to set recommended settings."
 
 echo -e "\n${GREEN}Happy B4X development on Linux Mint! 🤖🐧☕${NC}\n"
 exit 0
