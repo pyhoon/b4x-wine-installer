@@ -12,6 +12,7 @@
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
 - [⚙️ Configuration Details](#️-configuration-details)
+- [⚙️ Post-Installation Configuration](#️-post-installation-configuration)
 - [📁 Folder Structure](#-folder-structure)
 - [🗑️ Uninstall](#%EF%B8%8F-uninstall)
 - [🔍 Troubleshooting](#-troubleshooting)
