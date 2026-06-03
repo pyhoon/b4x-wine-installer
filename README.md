@@ -72,8 +72,16 @@ The `b4xV5.ini` configuration file is created by B4A/B4J on their first run. To 
 1. **Launch B4A once** (from menu or desktop), then close it.
 2. **Launch B4J once**, then close it.
 3. **Run the configurators:**
+   B4A
    ```bash
+   wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4a_settings.sh
+   chmod +x configure_b4a_settings.sh
    ./configure_b4a_settings.sh
+   ```
+   B4J
+   ```bash
+   wget https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/configure_b4j_settings.sh
+   chmod +x configure_b4j_settings.sh
    ./configure_b4j_settings.sh
    ```
 
