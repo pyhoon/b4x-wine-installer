@@ -3,7 +3,7 @@
 # B4X Unified Silent Installer for Linux Mint (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
 # Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026 (updated on 03 June 2026)
+# Date: 28 May 2026  (Updated 05 June 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
@@ -41,11 +41,11 @@ B4J_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4j.desktop"
 B4A_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4A.png"
 B4J_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4J.png"
 
-# Colors
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
+# Bright Colors
+readonly RED='\033[0;91m'
+readonly GREEN='\033[0;92m'
+readonly YELLOW='\033[1;93m'
+readonly BLUE='\033[0;94m'
 readonly NC='\033[0m'
 
 # Installation Flags (set by CLI or menu)
@@ -117,7 +117,7 @@ parse_args() {
 select_products() {
     # If flags weren't set via CLI, show interactive menu
     if [[ "$INSTALL_B4A" == false && "$INSTALL_B4J" == false ]]; then
-        echo -e "${NC}Select B4X Product(s) to Install"
+        echo -e "Select B4X Product(s) to Install:"
         
         PS3="Enter choice: "
         options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
@@ -140,7 +140,8 @@ select_products() {
 #-------------------------------------------------------------------------------
 # MAIN INSTALLATION STEPS
 #-------------------------------------------------------------------------------
-echo -e "\n${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "\n"
+echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║  B4X Unified Installer for Linux Mint                  ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
 
