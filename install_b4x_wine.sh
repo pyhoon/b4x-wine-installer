@@ -41,11 +41,11 @@ B4J_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4j.desktop"
 B4A_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4A.png"
 B4J_ICON_URL="https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/refs/heads/main/icons/B4J.png"
 
-# Bright Colors
-readonly RED='\033[0;91m'
-readonly GREEN='\033[0;92m'
-readonly YELLOW='\033[1;93m'
-readonly BLUE='\033[0;94m'
+# Colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
 # Installation Flags (set by CLI or menu)
