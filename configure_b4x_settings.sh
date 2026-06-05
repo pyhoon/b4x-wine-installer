@@ -3,7 +3,7 @@
 # B4X Unified Post-Install Configuration Script
 # Configures b4xV5.ini for B4A and/or B4J with optimized settings
 # Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 03 June 2026
+# Date: 03 June 2026 (Updated 05 June 2026)
 # License: MIT
 #===============================================================================
 set -euo pipefail
@@ -23,10 +23,11 @@ ANDROID_SDK_PLATFORM="C:\Android\platforms\android-36"
 B4A_INI_FILE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Roaming/Anywhere Software/Basic4android/b4xV5.ini"
 B4J_INI_FILE="${WINE_PREFIX}/drive_c/users/$(whoami)/AppData/Roaming/Anywhere Software/B4J/b4xV5.ini"
 
-# Colors
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly RED='\033[0;31m'
+# Bright Colors
+readonly RED='\033[0;91m'
+readonly GREEN='\033[0;92m'
+readonly YELLOW='\033[1;93m'
+readonly CYAN='\033[0;96m'
 readonly NC='\033[0m'
 
 log_info()    { echo -e "${YELLOW}[INFO]${NC} $1"; }
@@ -87,12 +88,17 @@ parse_args() {
 select_products() {
     # If flags weren't set via CLI, show interactive menu
     if [[ "$DO_B4A" == false && "$DO_B4J" == false ]]; then
-        echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${YELLOW}║  Select Product(s) to Configure                        ║${NC}"
-        echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}\n"
+
+        echo -e "\n"
+        echo -e "${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║  B4X Unified Post-Install Configurator                 ║${NC}"
+        echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}"
 
         PS3="Enter choice: "
         options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
+        
+        echo -e "\nSelect Product(s) to Configure:"
+
         select opt in "${options[@]}"; do
             case $opt in
                 "B4A Only") DO_B4A=true; break ;;
@@ -115,7 +121,7 @@ select_products() {
 #-------------------------------------------------------------------------------
 configure_product() {
     local product="$1" ini_file="$2"
-    echo -e "\n${GREEN}▶ Configuring ${product}...${NC}"
+    echo -e "\n${CYAN}▶ Configuring ${product}...${NC}"
     
     if [[ ! -f "$ini_file" ]]; then
         log_error "b4xV5.ini not found for ${product}: ${ini_file}"
@@ -145,9 +151,10 @@ configure_product() {
 parse_args "$@"
 select_products
 
-echo -e "\n${GREEN}════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  B4X Post-Install Configuration${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════════════${NC}\n"
+#echo -e "\n"
+#echo -e "${GREEN}════════════════════════════════════════════════════════${NC}"
+#echo -e "${GREEN}  B4X Post-Install Configuration${NC}"
+#echo -e "${GREEN}════════════════════════════════════════════════════════${NC}\n"
 
 B4A_OK=true
 B4J_OK=true
