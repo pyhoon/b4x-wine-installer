@@ -4,7 +4,7 @@
 # Supports selective removal of B4A, B4J, both, or everything (prefix + Wine)
 # Author: pyhoon (Aeric)
 # AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026 (Updated 03 June 2026)
+# Date: 28 May 2026 (Updated 05 June 2026)
 # License: MIT
 #===============================================================================
 set -euo pipefail
@@ -21,12 +21,12 @@ B4A_ICON="${HOME}/.local/share/icons/b4a.png"
 B4J_ICON="${HOME}/.local/share/icons/b4j.png"
 B4X_PROJECTS_DIR="${B4X_PROJECTS_DIR:-${HOME}/B4X_Projects}"
 
-# Colors
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly CYAN='\033[0;36m'
+# Bright Colors
+readonly RED='\033[0;91m'
+readonly GREEN='\033[0;92m'
+readonly YELLOW='\033[1;93m'
+readonly BLUE='\033[0;94m'
+readonly CYAN='\033[0;96m'
 readonly NC='\033[0m'
 
 # Flags
@@ -103,14 +103,13 @@ select_target() {
     if [[ "$UNINSTALL_B4A" == true || "$UNINSTALL_B4J" == true || "$UNINSTALL_ALL" == true ]]; then
         return
     fi
-
-    echo -e "\n${RED}╔════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║  Select What to Uninstall                              ║${NC}"
-    echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}\n"
     
     PS3="Enter choice: "
     options=("B4A Only" "B4J Only" "Both B4A & B4J" "Everything (Prefix + Wine)" "Quit")
-    select opt in "${options[@]}"; do
+
+    echo -e "\nSelect What to Uninstall:"
+    
+    select opt in "${options[@]}"; do        
         case $opt in
             "B4A Only") UNINSTALL_B4A=true; break ;;
             "B4J Only") UNINSTALL_B4J=true; break ;;
@@ -231,16 +230,18 @@ do_full_uninstall() {
 # MAIN
 #-------------------------------------------------------------------------------
 parse_args "$@"
+
+echo -e "\n"
+echo -e "${RED}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${RED}║  B4X Wine Uninstaller for Linux Mint                   ║${NC}"
+echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}"
+
 select_target
 
 # ✅ LOG MESSAGE PLACED HERE (After parsing is complete) to ensure it prints exactly once
 if [[ "$DRY_RUN" == true ]]; then
     log_info "🔍 DRY RUN MODE - No changes will be made"
 fi
-
-echo -e "\n${RED}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${RED}║  B4X Wine Uninstaller for Linux Mint                   ║${NC}"
-echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}\n"
 
 if [[ ! -d "$WINE_PREFIX" ]]; then
     log_warn "Wine prefix not found: ${WINE_PREFIX}"
