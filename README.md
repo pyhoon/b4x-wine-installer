@@ -1,12 +1,18 @@
 # b4x-wine-installer
 
 [![Linux Mint](https://img.shields.io/badge/Linux_Mint-21.x%20%7C%2022.x-green?logo=linux-mint)](https://linuxmint.com/)
+[![Arch Linux](https://img.shields.io/badge/Arch-rolling-1793D1?logo=arch-linux)](https://archlinux.org/)
 [![Wine](https://img.shields.io/badge/Wine-Stable-blue?logo=wine)](https://winehq.org/)
 [![IDE-B4A](https://img.shields.io/badge/IDE-B4A-teal?logo=android)](https://www.b4x.com/b4a.html)
 [![IDE-B4J](https://img.shields.io/badge/IDE-B4J-magenta?logo=b4x)](https://www.b4x.com/b4j.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-🎯 Install **B4A** and **B4J** on Linux Mint using Wine with a single, configurable script.
+🎯 Install **B4A** and **B4J** on Linux using Wine with a single, configurable script.
+
+Supported distribution families:
+
+- **Ubuntu / Linux Mint / Pop!_OS / Debian derivatives** (via `apt` + WineHQ repo)
+- **Arch / Manjaro / EndeavourOS / Garuda / CachyOS / Artix** (via `pacman`, auto-enables `[multilib]`)
 
 ![logo](icons/Combo.png)
 ![screenshot1](screenshots/Screenshot1.png)
@@ -33,11 +39,22 @@
 
 ## 🖥️ System Requirements
 
-- **Linux Mint 21.x** (Vanessa/Vera/Victoria/Virginia) or **22.x** (Wilma/Xia/Zara/Zena)
-- **64-bit architecture** (with 32-bit support enabled)
+- **Linux** on x86_64, with one of these distribution families:
+  - **Ubuntu/Mint family:** Linux Mint 21.x / 22.x, Ubuntu 22.04 (jammy) or 24.04 (noble), Pop!_OS, …
+  - **Arch family:** Arch, Manjaro, EndeavourOS, Garuda, CachyOS, Artix, … (`[multilib]` will be enabled automatically if missing)
+- **64-bit architecture** (with 32-bit support enabled — handled by the script)
 - **Internet connection** for downloads
 - **~4.8 GB free disk space** (Wine prefix + JDK + B4A + B4J + Android SDK + B4A Resources)
 - **sudo privileges** for system package installation
+
+### 📦 Packages installed by the script
+
+| Distro family | Packages |
+| --- | --- |
+| **Ubuntu/Mint** | `winehq-stable`, `winetricks`, `cabextract`, `unzip` (via `apt` from WineHQ repo) |
+| **Arch**        | `wine`, `wine-gecko`, `wine-mono`, `winetricks`, `cabextract`, `unzip`, `wget`, `curl`, `desktop-file-utils` (via `pacman`) |
+
+> **Note for Arch users:** the script calls `pacman -Sy --needed --noconfirm …`, which refreshes the package database but does **not** perform a full system upgrade. If your system is significantly out of date, consider running `sudo pacman -Syu` first to avoid partial-upgrade breakage. The `[multilib]` section is enabled automatically (with a backup of `/etc/pacman.conf`) only if it is not already active.
 
 ## 🚀 Quick Start
 
@@ -198,6 +215,8 @@ You may see this error when reinstall. Just click No. It will pops up again. Cli
 ## 📚 Resources
 
 - WineHQ Installation Guide for Linux Mint <sup>[linuxcapable.com](https://linuxcapable.com/how-to-install-wine-on-linux-mint/)</sup>
+- Arch Wiki: Wine <sup>[wiki.archlinux.org](https://wiki.archlinux.org/title/Wine)</sup>
+- Arch Wiki: Multilib (32-bit packages) <sup>[wiki.archlinux.org](https://wiki.archlinux.org/title/Official_repositories#multilib)</sup>
 - B4A on Wine AppDB <sup>[appdb.winehq.org](https://appdb.winehq.org/objectManager.php?sClass=application&iId=18092)</sup>
 - B4X Forum: Running B4A on Linux with Wine <sup>[www.b4x.com](https://www.b4x.com/android/forum/threads/running-b4a-and-b4j-under-linux-with-wine-fully-functional.98431/)</sup>
 - Winetricks Documentation <sup>[GitHub](https://github.com/Winetricks/winetricks?spm=a2ty_o01.29997173.0.0.222555fb6auMYp)</sup>
@@ -219,4 +238,4 @@ Found an issue or have an improvement?
 MIT License - See [LICENSE](https://github.com/pyhoon/b4x-wine-installer/tree/main?tab=MIT-1-ov-file#) file for details.
 
 ---
-*Last updated: 03 June 2026 | Compatible with Linux Mint 21.x / 22.x*
+*Last updated: 06 June 2026 | Compatible with Linux Mint 21.x / 22.x, Ubuntu 22.04 / 24.04, and Arch-based distributions*
