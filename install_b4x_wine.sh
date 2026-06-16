@@ -74,11 +74,41 @@ check_mint() {
 
 get_ubuntu_codename() {
     local codename
-    codename=$(grep '^UBUNTU_CODENAME=' /etc/os-release | cut -d= -f2)
-    case "$codename" in
-        noble|jammy) echo "$codename" ;;
-        *) log_error "Unsupported Ubuntu base: $codename (Mint 21.x=jammy, 22.x=noble)" ;;
-    esac
+    # Try lsb_release first, fallback to /etc/os-release
+    if command -v lsb_release &>/dev/null; then
+        codename=$(lsb_release -sc)
+    else
+        codename=$(grep '^UBUNTU_CODENAME=' /etc/os-release | cut -d= -f2)
+    fi
+
+    if [[ -z "$codename" ]]; then
+        log_error "Could not determine Ubuntu codename. Please set WINE_REPO_CODENAME manually."
+    fi
+
+    # Allow override via environment variable
+    if [[ -n "$WINE_REPO_CODENAME" ]]; then
+        log_info "Using user‑provided codename: $WINE_REPO_CODENAME"
+        echo "$WINE_REPO_CODENAME"
+        return
+    fi
+
+    # Officially supported by WineHQ (as of June 2025)
+    local known_codenames=("focal" "jammy" "noble" "oracular")
+    local known=0
+    for k in "${known_codenames[@]}"; do
+        if [[ "$codename" == "$k" ]]; then
+            known=1
+            break
+        fi
+    done
+
+    if [[ $known -eq 0 ]]; then
+        log_warn "Ubuntu codename '$codename' is not yet in the WineHQ repository list."
+        log_warn "Falling back to 'noble' (Ubuntu 24.04 LTS) – this usually works for newer releases."
+        codename="noble"
+    fi
+
+    echo "$codename"
 }
 
 download_file() {
