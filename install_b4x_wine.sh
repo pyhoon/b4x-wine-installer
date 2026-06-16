@@ -1,9 +1,9 @@
 #!/bin/bash
 #===============================================================================
-# B4X Unified Silent Installer for Linux Mint (Wine-based)
+# B4X Unified Silent Installer for Linux Mint/Ubuntu (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
 # Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026  (Updated 05 June 2026)
+# Date: 28 May 2026  (Updated 17 June 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
@@ -13,6 +13,7 @@ set -e  # Exit on error
 # Edit these values OR override via environment variables before running.
 #-------------------------------------------------------------------------------
 WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
+$WINE_REPO_CODENAME="${WINE_REPO_CODENAME:-$(get_ubuntu_codename)}"
 WINE_ARCH="win64"
 JAVA_WINE_PATH="C:\\Java"
 JDK_URL="https://www.b4x.com/b4j/files/jdk-19.0.2.zip"
@@ -92,8 +93,8 @@ get_ubuntu_codename() {
         return
     fi
 
-    # Officially supported by WineHQ (as of June 2025)
-    local known_codenames=("focal" "jammy" "noble" "oracular")
+    # Officially supported by WineHQ (as of June 2026)
+    local known_codenames=("focal" "jammy" "noble" "plucky" "questing" "resolute")
     local known=0
     for k in "${known_codenames[@]}"; do
         if [[ "$codename" == "$k" ]]; then
@@ -172,7 +173,7 @@ select_products() {
 #-------------------------------------------------------------------------------
 echo -e "\n"
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  B4X Unified Installer for Linux Mint                  ║${NC}"
+echo -e "${BLUE}║  B4X Unified Installer for Linux Mint/Ubuntu           ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
 
 check_root
