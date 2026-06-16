@@ -13,7 +13,6 @@ set -e  # Exit on error
 # Edit these values OR override via environment variables before running.
 #-------------------------------------------------------------------------------
 WINE_PREFIX="${WINE_PREFIX:-${HOME}/.wine_b4x}"
-$WINE_REPO_CODENAME="${WINE_REPO_CODENAME:-$(get_ubuntu_codename)}"
 WINE_ARCH="win64"
 JAVA_WINE_PATH="C:\\Java"
 JDK_URL="https://www.b4x.com/b4j/files/jdk-19.0.2.zip"
