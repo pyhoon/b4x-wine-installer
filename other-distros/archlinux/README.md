@@ -14,9 +14,9 @@ Supported distribution families:
 - **Ubuntu / Linux Mint / Pop!_OS / Debian derivatives** (via `apt` + WineHQ repo)
 - **Arch / Manjaro / EndeavourOS / Garuda / CachyOS / Artix** (via `pacman`, auto-enables `[multilib]`)
 
-![logo](icons/Combo.png)
-![screenshot1](screenshots/Screenshot1.png)
-![screenshot2](screenshots/Screenshot2.png)
+![logo](../../icons/Combo.png)
+![screenshot1](../../screenshots/Screenshot1.png)
+![screenshot2](../../screenshots/Screenshot2.png)
 
 ## 📑 Table of Contents
 - [✨ Features](#-features)
