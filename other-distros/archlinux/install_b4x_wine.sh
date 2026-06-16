@@ -1,9 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# B4X Unified Silent Installer for Linux Mint (Wine-based)
+# B4X Unified Silent Installer for Linux (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
+# Distros:  Ubuntu/Mint/Debian-based and Arch-based (Manjaro, EndeavourOS,
+#           Garuda, CachyOS, Artix, ...)
 # Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026  (Updated 05 June 2026)
+# Date: 28 May 2026  (Updated 06 June 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
@@ -66,10 +68,48 @@ check_root() {
     fi
 }
 
-check_mint() {
-    if ! grep -qi "linux mint" /etc/os-release 2>/dev/null; then
-        log_warn "This script is optimized for Linux Mint. Proceeding anyway..."
-    fi
+# Detected distribution family. Populated by detect_distro().
+#   "arch"   -> pacman-based (Arch, Manjaro, EndeavourOS, Garuda, CachyOS, Artix...)
+#   "ubuntu" -> apt-based    (Linux Mint, Ubuntu, Pop!_OS, Debian derivatives...)
+DISTRO=""
+OS_ID=""
+OS_ID_LIKE=""
+OS_PRETTY_NAME=""
+
+detect_distro() {
+    [[ -f /etc/os-release ]] || log_error "Cannot detect OS: /etc/os-release not found"
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    OS_ID="${ID:-}"
+    OS_ID_LIKE="${ID_LIKE:-}"
+    OS_PRETTY_NAME="${PRETTY_NAME:-${OS_ID:-unknown}}"
+
+    # Arch and its derivatives (by ID)
+    case "$OS_ID" in
+        arch|manjaro|garuda|endeavouros|cachyos|artix)
+            DISTRO="arch"; return ;;
+    esac
+    # Arch derivatives via ID_LIKE
+    case " ${OS_ID_LIKE} " in
+        *\ arch\ *)
+            DISTRO="arch"; return ;;
+    esac
+    # Debian/Ubuntu/Mint family (by ID)
+    case "$OS_ID" in
+        linuxmint|ubuntu|debian|pop|neon)
+            DISTRO="ubuntu"; return ;;
+    esac
+    # Debian/Ubuntu/Mint family (via ID_LIKE)
+    case " ${OS_ID_LIKE} " in
+        *\ debian\ *|*\ ubuntu\ *|*\ mint\ *)
+            DISTRO="ubuntu"; return ;;
+    esac
+    log_error "Unsupported distribution: ID='${OS_ID}' ID_LIKE='${OS_ID_LIKE}'. Supported: Arch-based or Ubuntu/Mint/Debian-based."
+}
+
+check_supported() {
+    detect_distro
+    log_info "Detected distribution: ${OS_PRETTY_NAME} (${DISTRO}-based)"
 }
 
 get_ubuntu_codename() {
@@ -142,11 +182,11 @@ select_products() {
 #-------------------------------------------------------------------------------
 echo -e "\n"
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  B4X Unified Installer for Linux Mint                  ║${NC}"
+echo -e "${BLUE}║  B4X Unified Installer for Linux                        ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}\n"
 
 check_root
-check_mint
+check_supported
 parse_args "$@"
 select_products
 
@@ -160,33 +200,105 @@ echo -e "  ${YELLOW}• B4X Projects: ${B4X_PROJECTS_DIR}${NC}"
 echo ""
 
 #-------------------------------------------------------------------------------
-# 1. System & Wine Setup (Shared)
+# 1. System & Wine Setup (Distribution-aware)
 #-------------------------------------------------------------------------------
-log_info "Enabling 32-bit architecture support..."
-sudo dpkg --add-architecture i386 2>/dev/null || true
+install_wine_ubuntu() {
+    log_info "Enabling 32-bit architecture support..."
+    sudo dpkg --add-architecture i386 2>/dev/null || true
 
-log_info "Cleaning up any conflicting WineHQ repository configurations..."
-sudo rm -f /etc/apt/sources.list.d/winehq*.sources /etc/apt/sources.list.d/winehq*.list /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
-sudo rm -f /usr/share/keyrings/winehq*.gpg /etc/apt/keyrings/winehq*.key 2>/dev/null || true
-sudo apt clean -qq 2>/dev/null || true
+    log_info "Cleaning up any conflicting WineHQ repository configurations..."
+    sudo rm -f /etc/apt/sources.list.d/winehq*.sources /etc/apt/sources.list.d/winehq*.list /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
+    sudo rm -f /usr/share/keyrings/winehq*.gpg /etc/apt/keyrings/winehq*.key 2>/dev/null || true
+    sudo apt clean -qq 2>/dev/null || true
 
-log_info "Adding fresh WineHQ repository..."
-CODENAME=$(get_ubuntu_codename)
-sudo install -m 0755 -d /usr/share/keyrings
-curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
-sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
+    log_info "Adding fresh WineHQ repository..."
+    CODENAME=$(get_ubuntu_codename)
+    sudo install -m 0755 -d /usr/share/keyrings
+    curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
+    sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
 Types: deb
 URIs: https://dl.winehq.org/wine-builds/ubuntu/
 Suites: ${CODENAME}
 Components: main
 Signed-By: /usr/share/keyrings/winehq.gpg
 EOF
-sudo apt update -qq
+    sudo apt update -qq
 
-log_info "Installing Wine Stable & Winetricks..."
-sudo apt install -y --install-recommends winehq-stable winetricks
-WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
-log_success "Wine installed: ${WINE_VERSION}"
+    log_info "Installing Wine Stable & Winetricks (apt)..."
+    sudo apt install -y --install-recommends winehq-stable winetricks cabextract unzip
+}
+
+ensure_multilib_arch() {
+    # 32-bit Wine on Arch requires the [multilib] repository.
+    if sudo grep -qE '^\[multilib\]' /etc/pacman.conf; then
+        log_info "[multilib] repository already enabled"
+        return 0
+    fi
+
+    log_info "Enabling [multilib] repository in /etc/pacman.conf..."
+    sudo cp /etc/pacman.conf "/etc/pacman.conf.bak.$(date +%Y%m%d%H%M%S)"
+
+    if sudo grep -qE '^#\[multilib\]' /etc/pacman.conf; then
+        # Uncomment the existing commented [multilib] block (and its Include line).
+        # State-aware: only affects lines inside the [multilib] section.
+        local tmp; tmp=$(mktemp) || log_error "Failed to create temp file"
+        sudo awk '
+            /^#\[multilib\]/    { in_ml=1; sub(/^#/, ""); print; next }
+            /^\[[^#]/           { in_ml=0 }
+            in_ml && /^#/       { sub(/^#/, ""); print; next }
+            { print }
+        ' /etc/pacman.conf > "$tmp"
+        sudo install -m 644 "$tmp" /etc/pacman.conf
+        rm -f "$tmp"
+    else
+        # No commented block exists: append a fresh section at the end.
+        printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' \
+            | sudo tee -a /etc/pacman.conf > /dev/null
+    fi
+    log_success "[multilib] repository enabled (backup saved as /etc/pacman.conf.bak.*)"
+}
+
+install_wine_arch() {
+    ensure_multilib_arch
+
+    # Paquetes auxiliares (siempre necesarios). `--needed` de pacman ya salta
+    # los que estén instalados, sin riesgo de conflicto.
+    local pkgs=(
+        winetricks
+        cabextract
+        unzip
+        wget
+        curl
+        desktop-file-utils
+    )
+
+    # wine / wine-staging / wine-git / proton-wine / wine-wow64 / ...
+    # son proveedores mutuamente excluyentes del binario `wine`. Si el
+    # usuario ya tiene cualquiera de ellos, lo respetamos y NO pedimos el
+    # paquete `wine` (que de lo contrario entraría en conflicto).
+    if command -v wine >/dev/null 2>&1; then
+        local current; current=$(wine --version 2>/dev/null || echo "unknown")
+        log_info "Wine ya instalado (${current}) — se respeta; no se instalará el paquete 'wine'"
+    else
+        pkgs+=(wine wine-gecko wine-mono)
+    fi
+
+    log_info "Instalando dependencias (pacman): ${pkgs[*]}"
+    sudo pacman -Sy --needed --noconfirm "${pkgs[@]}" \
+        || log_error "Failed to install packages via pacman"
+}
+
+install_wine() {
+    case "$DISTRO" in
+        arch)   install_wine_arch ;;
+        ubuntu) install_wine_ubuntu ;;
+        *)      log_error "Unknown DISTRO: $DISTRO" ;;
+    esac
+    WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
+    log_success "Wine installed: ${WINE_VERSION}"
+}
+
+install_wine
 
 #-------------------------------------------------------------------------------
 # 2. Create & Configure Wine Prefix (Shared)
@@ -382,5 +494,5 @@ echo "  4. For B4A, set android.jar to C:\Android\platforms\android-36\android.j
 echo "  5. (Optional) Set Additional Libraries path to C:\Additional Libraries"
 echo "  Alternatively: Run ./configure_b4x_settings.sh to set recommended settings."
 
-echo -e "\n${GREEN}Happy B4X development on Linux Mint! 🤖🐧☕${NC}\n"
+echo -e "\n${GREEN}Happy B4X development on Linux! 🤖🐧☕${NC}\n"
 exit 0
