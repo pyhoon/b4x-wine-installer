@@ -15,8 +15,9 @@ Supported distribution families:
 - **Arch / Manjaro / EndeavourOS / Garuda / CachyOS / Artix** (via `pacman`, auto-enables `[multilib]`)
 
 ![logo](icons/Combo.png)
-![screenshot1](screenshots/Screenshot1.png)
-![screenshot2](screenshots/Screenshot2.png)
+![screenshot1](screenshots/01.png)
+![screenshot2](screenshots/02.png)
+![screenshot3](screenshots/03.png)
 
 ## 📑 Table of Contents
 - [✨ Features](#-features)
