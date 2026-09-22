@@ -18,6 +18,7 @@ Supported distribution families:
 ![screenshot1](screenshots/01.png)
 ![screenshot2](screenshots/02.png)
 ![screenshot3](screenshots/03.png)
+![screenshot4](screenshots/04.png)
 
 ## 📑 Table of Contents
 - [✨ Features](#-features)
