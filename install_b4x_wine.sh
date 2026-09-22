@@ -2,8 +2,8 @@
 #===============================================================================
 # B4X Unified Silent Installer for Linux Mint/Ubuntu (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
-# Author: pyhoon (Aeric) | AI Assistant: Qwen3.6 Plus
-# Date: 28 May 2026  (Updated 17 June 2026)
+# Author: pyhoon (Aeric) | AI Assistants: Qwen3.6 Plus + MiMo-V2.6-Flash Free
+# Date: 28 May 2026  (Updated 22 Sep 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
