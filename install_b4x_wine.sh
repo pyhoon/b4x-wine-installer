@@ -51,6 +51,7 @@ readonly NC='\033[0m'
 # Installation Flags (set by CLI or menu)
 INSTALL_B4A=false
 INSTALL_B4J=false
+REINSTALL=false
 
 #-------------------------------------------------------------------------------
 # HELPER FUNCTIONS
@@ -125,10 +126,13 @@ download_file() {
 show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo "Options:"
-    echo "  --b4a      Install B4A only"
-    echo "  --b4j      Install B4J only"
-    echo "  --all      Install both B4A & B4J"
-    echo "  -h, --help Show this help message"
+    echo "  --b4a            Install B4A only"
+    echo "  --b4j            Install B4J only"
+    echo "  --all            Install both B4A & B4J"
+    echo "  --reinstall-b4a  Reinstall B4A only (skip dependencies)"
+    echo "  --reinstall-b4j  Reinstall B4J only (skip dependencies)"
+    echo "  --reinstall-all  Reinstall both B4A & B4J (skip dependencies)"
+    echo "  -h, --help       Show this help message"
     exit 0
 }
 
@@ -138,6 +142,9 @@ parse_args() {
             --b4a) INSTALL_B4A=true; shift ;;
             --b4j) INSTALL_B4J=true; shift ;;
             --all) INSTALL_B4A=true; INSTALL_B4J=true; shift ;;
+            --reinstall-b4a) INSTALL_B4A=true; REINSTALL=true; shift ;;
+            --reinstall-b4j) INSTALL_B4J=true; REINSTALL=true; shift ;;
+            --reinstall-all) INSTALL_B4A=true; INSTALL_B4J=true; REINSTALL=true; shift ;;
             -h|--help) show_help ;;
             *) log_error "Unknown option: $1"; show_help ;;
         esac
@@ -150,12 +157,15 @@ select_products() {
         echo -e "Select B4X Product(s) to Install:"
         
         PS3="Enter choice: "
-        options=("B4A Only" "B4J Only" "Both B4A & B4J" "Quit")
+        options=("B4A Only" "B4J Only" "Both B4A & B4J" "Reinstall B4A Only" "Reinstall B4J Only" "Reinstall B4A & B4J" "Quit")
         select opt in "${options[@]}"; do
             case $opt in
                 "B4A Only") INSTALL_B4A=true; break ;;
                 "B4J Only") INSTALL_B4J=true; break ;;
                 "Both B4A & B4J") INSTALL_B4A=true; INSTALL_B4J=true; break ;;
+                "Reinstall B4A Only") INSTALL_B4A=true; REINSTALL=true; break ;;
+                "Reinstall B4J Only") INSTALL_B4J=true; REINSTALL=true; break ;;
+                "Reinstall B4A & B4J") INSTALL_B4A=true; INSTALL_B4J=true; REINSTALL=true; break ;;
                 "Quit") log_info "Installation cancelled."; exit 0 ;;
                 *) log_warn "Invalid choice. Try again." ;;
             esac
@@ -181,6 +191,11 @@ parse_args "$@"
 select_products
 
 log_info "Configuration:"
+if [[ "$REINSTALL" == true ]]; then
+    echo -e "  ${YELLOW}• Mode: Reinstall (dependencies will NOT be reinstalled)${NC}"
+else
+    echo -e "  ${GREEN}• Mode: Install${NC}"
+fi
 [[ "$INSTALL_B4A" == true ]] && echo -e "  ${GREEN}• B4A: Enabled${NC}"
 [[ "$INSTALL_B4J" == true ]] && echo -e "  ${GREEN}• B4J: Enabled${NC}"
 echo -e "  ${YELLOW}• Wine Prefix: ${WINE_PREFIX}${NC}"
@@ -190,66 +205,85 @@ echo -e "  ${YELLOW}• B4X Projects: ${B4X_PROJECTS_DIR}${NC}"
 echo ""
 
 #-------------------------------------------------------------------------------
-# 1. System & Wine Setup (Shared)
+# 1. System & Wine Setup (Shared, skipped on reinstall)
 #-------------------------------------------------------------------------------
-log_info "Enabling 32-bit architecture support..."
-sudo dpkg --add-architecture i386 2>/dev/null || true
+if [[ "$REINSTALL" == false ]]; then
+    log_info "Enabling 32-bit architecture support..."
+    sudo dpkg --add-architecture i386 2>/dev/null || true
 
-log_info "Cleaning up any conflicting WineHQ repository configurations..."
-sudo rm -f /etc/apt/sources.list.d/winehq*.sources /etc/apt/sources.list.d/winehq*.list /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
-sudo rm -f /usr/share/keyrings/winehq*.gpg /etc/apt/keyrings/winehq*.key 2>/dev/null || true
-sudo apt clean -qq 2>/dev/null || true
+    log_info "Cleaning up any conflicting WineHQ repository configurations..."
+    sudo rm -f /etc/apt/sources.list.d/winehq*.sources /etc/apt/sources.list.d/winehq*.list /etc/apt/sources.list.d/winehq*.list.save 2>/dev/null || true
+    sudo rm -f /usr/share/keyrings/winehq*.gpg /etc/apt/keyrings/winehq*.key 2>/dev/null || true
+    sudo apt clean -qq 2>/dev/null || true
 
-log_info "Adding fresh WineHQ repository..."
-CODENAME=$(get_ubuntu_codename)
-sudo install -m 0755 -d /usr/share/keyrings
-curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
-sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
+    log_info "Adding fresh WineHQ repository..."
+    CODENAME=$(get_ubuntu_codename)
+    sudo install -m 0755 -d /usr/share/keyrings
+    curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
+    sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
 Types: deb
 URIs: https://dl.winehq.org/wine-builds/ubuntu/
 Suites: ${CODENAME}
 Components: main
 Signed-By: /usr/share/keyrings/winehq.gpg
 EOF
-sudo apt update -qq
+    sudo apt update -qq
 
-log_info "Installing Wine Stable & Winetricks..."
-sudo apt install -y --install-recommends winehq-stable winetricks
-WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
-log_success "Wine installed: ${WINE_VERSION}"
+    log_info "Installing Wine Stable & Winetricks..."
+    sudo apt install -y --install-recommends winehq-stable winetricks
+    WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
+    log_success "Wine installed: ${WINE_VERSION}"
+else
+    command -v wine &>/dev/null || log_error "Wine not found. Install Wine first, or run without reinstall options."
+    WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
+    log_info "Reinstall mode: skipping Wine setup (using ${WINE_VERSION})"
+fi
 
 #-------------------------------------------------------------------------------
-# 2. Create & Configure Wine Prefix (Shared)
+# 2. Create & Configure Wine Prefix (Shared, dependencies skipped on reinstall)
 #-------------------------------------------------------------------------------
 export WINEARCH="${WINE_ARCH}"
 export WINEPREFIX="${WINE_PREFIX}"
-log_info "Creating/Updating 64-bit Wine prefix: ${WINE_PREFIX}..."
-wineboot -u 2>/dev/null || true
+if [[ "$REINSTALL" == false ]]; then
+    log_info "Creating/Updating 64-bit Wine prefix: ${WINE_PREFIX}..."
+    wineboot -u 2>/dev/null || true
 
-log_info "Installing shared dependencies (VC++ 2010, .NET 4.5.2, DXVK, GDI)..."
-winetricks -q vcrun2010 dotnet452 dxvk renderer=gdi 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
-winecfg -v win10 2>/dev/null || true
-
-#-------------------------------------------------------------------------------
-# 3. Install JDK 19 (Shared)
-#-------------------------------------------------------------------------------
-log_info "Downloading & extracting JDK 19 to C:\\Java..."
-mkdir -p "${WINE_PREFIX}/drive_c/Java"
-JDK_ZIP="${WINE_PREFIX}/drive_c/temp/jdk-19.0.2.zip"
-mkdir -p "$(dirname "$JDK_ZIP")"
-download_file "${JDK_URL}" "$JDK_ZIP"
-
-JDK_EXTRACT_DIR="${WINE_PREFIX}/drive_c/temp/jdk_extract"
-mkdir -p "$JDK_EXTRACT_DIR"
-unzip -q "$JDK_ZIP" -d "$JDK_EXTRACT_DIR"
-JDK_SRC=$(find "$JDK_EXTRACT_DIR" -maxdepth 1 -type d -name "jdk*" | head -1)
-if [[ -n "$JDK_SRC" && -d "$JDK_SRC" ]]; then
-    cp -r "$JDK_SRC"/* "${WINE_PREFIX}/drive_c/Java/"
-    log_success "JDK 19 installed to C:\\Java"
+    log_info "Installing shared dependencies (VC++ 2010, .NET 4.5.2, DXVK, GDI)..."
+    winetricks -q vcrun2010 dotnet452 dxvk renderer=gdi 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
+    winecfg -v win10 2>/dev/null || true
 else
-    log_warn "Could not locate JDK folder in archive"
+    if [[ ! -d "$WINE_PREFIX" ]]; then
+        log_info "Wine prefix not found. Creating: ${WINE_PREFIX}..."
+        wineboot -u 2>/dev/null || true
+    else
+        log_info "Reinstall mode: skipping Wine prefix dependencies (${WINE_PREFIX})"
+    fi
 fi
-rm -rf "$JDK_EXTRACT_DIR" "$JDK_ZIP"
+
+#-------------------------------------------------------------------------------
+# 3. Install JDK 19 (Shared, skipped on reinstall)
+#-------------------------------------------------------------------------------
+if [[ "$REINSTALL" == false ]]; then
+    log_info "Downloading & extracting JDK 19 to C:\\Java..."
+    mkdir -p "${WINE_PREFIX}/drive_c/Java"
+    JDK_ZIP="${WINE_PREFIX}/drive_c/temp/jdk-19.0.2.zip"
+    mkdir -p "$(dirname "$JDK_ZIP")"
+    download_file "${JDK_URL}" "$JDK_ZIP"
+
+    JDK_EXTRACT_DIR="${WINE_PREFIX}/drive_c/temp/jdk_extract"
+    mkdir -p "$JDK_EXTRACT_DIR"
+    unzip -q "$JDK_ZIP" -d "$JDK_EXTRACT_DIR"
+    JDK_SRC=$(find "$JDK_EXTRACT_DIR" -maxdepth 1 -type d -name "jdk*" | head -1)
+    if [[ -n "$JDK_SRC" && -d "$JDK_SRC" ]]; then
+        cp -r "$JDK_SRC"/* "${WINE_PREFIX}/drive_c/Java/"
+        log_success "JDK 19 installed to C:\\Java"
+    else
+        log_warn "Could not locate JDK folder in archive"
+    fi
+    rm -rf "$JDK_EXTRACT_DIR" "$JDK_ZIP"
+else
+    log_info "Reinstall mode: skipping JDK 19 setup"
+fi
 
 #-------------------------------------------------------------------------------
 # 4. B4A Installation (Conditional)
@@ -258,46 +292,51 @@ if [[ "$INSTALL_B4A" == true ]]; then
     log_info ">>> Installing B4A..."
     B4A_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4A.exe"
     mkdir -p "$(dirname "$B4A_INSTALLER")"
+    rm -f "$B4A_INSTALLER" 2>/dev/null || true
     download_file "${B4A_URL}" "$B4A_INSTALLER"
     wine "$B4A_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || wine "$B4A_INSTALLER" 2>/dev/null || log_warn "B4A installation failed"
 
-    # Android SDK
-    log_info "Setting up Android SDK..."
-    SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
-    mkdir -p "$(dirname "$SDK_ZIP")"
-    download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
-    
-    SDK_TARGET="${SDK_LINUX_PATH}/cmdline-tools"
+    if [[ "$REINSTALL" == false ]]; then
+        # Android SDK
+        log_info "Setting up Android SDK..."
+        SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
+        mkdir -p "$(dirname "$SDK_ZIP")"
+        download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
 
-    # ✅ FIX: Skip if already installed to avoid 'Directory not empty' error
-    if [[ -d "$SDK_TARGET" && -f "${SDK_TARGET}/bin/sdkmanager.bat" ]]; then
-        log_info "Android SDK Command Line Tools already installed. Skipping."
-    else
-        # Create parent dir only (NOT the target, so mv can create it cleanly)
-        mkdir -p "$(dirname "$SDK_TARGET")"
-        
-        SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
-        rm -rf "$SDK_TEMP" 2>/dev/null || true
-        unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
-        
-        if [[ -d "${SDK_TEMP}/cmdline-tools" ]]; then
-            mv "${SDK_TEMP}/cmdline-tools" "$SDK_LINUX_PATH"
-            log_success "Android SDK Command Line Tools extracted to ${SDK_WINE_PATH}"
+        SDK_TARGET="${SDK_LINUX_PATH}/cmdline-tools"
+
+        # ✅ FIX: Skip if already installed to avoid 'Directory not empty' error
+        if [[ -d "$SDK_TARGET" && -f "${SDK_TARGET}/bin/sdkmanager.bat" ]]; then
+            log_info "Android SDK Command Line Tools already installed. Skipping."
         else
-            log_warn "Unexpected SDK archive structure. Fallback extraction skipped."
-        fi
-        rm -rf "$SDK_TEMP" "$SDK_ZIP"
-    fi
+            # Create parent dir only (NOT the target, so mv can create it cleanly)
+            mkdir -p "$(dirname "$SDK_TARGET")"
 
-    # Licenses & Resources
-    mkdir -p "${SDK_LINUX_PATH}/licenses"
-    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "${SDK_LINUX_PATH}/licenses/android-sdk-license"
-    echo "84831b9409646a918e30573bab4c9c91346d8abd" > "${SDK_LINUX_PATH}/licenses/android-sdk-preview-license"
-    
-    RES_ZIP="${WINE_PREFIX}/drive_c/temp/resources_7_25.zip"
-    download_file "${SDK_RESOURCES_URL}" "$RES_ZIP"
-    unzip -q -o "$RES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null || true
-    rm -f "$RES_ZIP"
+            SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
+            rm -rf "$SDK_TEMP" 2>/dev/null || true
+            unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
+
+            if [[ -d "${SDK_TEMP}/cmdline-tools" ]]; then
+                mv "${SDK_TEMP}/cmdline-tools" "$SDK_LINUX_PATH"
+                log_success "Android SDK Command Line Tools extracted to ${SDK_WINE_PATH}"
+            else
+                log_warn "Unexpected SDK archive structure. Fallback extraction skipped."
+            fi
+            rm -rf "$SDK_TEMP" "$SDK_ZIP"
+        fi
+
+        # Licenses & Resources
+        mkdir -p "${SDK_LINUX_PATH}/licenses"
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "${SDK_LINUX_PATH}/licenses/android-sdk-license"
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" > "${SDK_LINUX_PATH}/licenses/android-sdk-preview-license"
+
+        RES_ZIP="${WINE_PREFIX}/drive_c/temp/resources_7_25.zip"
+        download_file "${SDK_RESOURCES_URL}" "$RES_ZIP"
+        unzip -q -o "$RES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null || true
+        rm -f "$RES_ZIP"
+    else
+        log_info "Reinstall mode: skipping Android SDK setup"
+    fi
 
     # Launcher
     B4A_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A/B4A.exe"
@@ -338,6 +377,7 @@ if [[ "$INSTALL_B4J" == true ]]; then
     log_info ">>> Installing B4J..."
     B4J_INSTALLER="${WINE_PREFIX}/drive_c/temp/B4J.exe"
     mkdir -p "$(dirname "$B4J_INSTALLER")"
+    rm -f "$B4J_INSTALLER" 2>/dev/null || true
     download_file "${B4J_URL}" "$B4J_INSTALLER"
     wine "$B4J_INSTALLER" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 2>/dev/null || wine "$B4J_INSTALLER" 2>/dev/null || log_warn "B4J installation failed"
 
@@ -396,6 +436,9 @@ echo -e "${GREEN}═════════════════════
 echo -e "${YELLOW}📋 Installed Products:${NC}"
 [[ "$INSTALL_B4A" == true ]] && echo "  • B4A (Android Development)"
 [[ "$INSTALL_B4J" == true ]] && echo "  • B4J (Desktop/Web Development)"
+if [[ "$REINSTALL" == true ]]; then
+    echo -e "${YELLOW}  • Reinstall mode: Wine, JDK, Android SDK and other dependencies were not reinstalled.${NC}"
+fi
 
 echo -e "\n${YELLOW}⚙️  Configuration Summary:${NC}"
 echo "  • Wine Prefix: ${WINE_PREFIX}"
