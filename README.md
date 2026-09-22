@@ -30,7 +30,7 @@ Supported distribution families:
 
 ## ✨ Features
 - ✅ Unified installer for **B4A**, **B4J**, or **Both** in a single Wine prefix
-- ✅ Interactive menu or silent CLI flags (`--b4a`, `--b4j`, `--all`)
+- ✅ Interactive menu or silent CLI flags (`--b4a`, `--b4j`, `--all`, `--reinstall-b4a`, `--reinstall-b4j`, `--reinstall-all`)
 - ✅ Fully configurable paths via editable variables or environment overrides
 - ✅ Installs Wine Stable, Winetricks, .NET 4.5.2, VC++ 2010, DXVK & GDI
 - ✅ Downloads & extracts JDK 19, Android SDK Command Line Tools, and B4A Resources
@@ -74,6 +74,12 @@ chmod +x install_b4x_wine.sh
 ```
 ```bash
 ./install_b4x_wine.sh --b4j          # B4J only
+```
+```bash
+# Reinstall IDE only (Wine, JDK, Android SDK & other dependencies are skipped)
+./install_b4x_wine.sh --reinstall-b4a   # Reinstall B4A only
+./install_b4x_wine.sh --reinstall-b4j   # Reinstall B4J only
+./install_b4x_wine.sh --reinstall-all   # Reinstall both B4A & B4J
 ```
 > 🔐 You'll be prompted for your password when `sudo` is needed.
 
