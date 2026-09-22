@@ -56,9 +56,9 @@ REINSTALL=false
 #-------------------------------------------------------------------------------
 # HELPER FUNCTIONS
 #-------------------------------------------------------------------------------
-log_info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
-log_warn()    { echo -e "${YELLOW}[!]${NC} $1"; }
+log_info()    { echo -e "${BLUE}[INFO]${NC} $1" >&2; }
+log_success() { echo -e "${GREEN}[✓]${NC} $1" >&2; }
+log_warn()    { echo -e "${YELLOW}[!]${NC} $1" >&2; }
 log_error()   { echo -e "${RED}[✗]${NC} $1" >&2; exit 1; }
 
 check_root() {
@@ -74,28 +74,43 @@ check_mint() {
 }
 
 get_ubuntu_codename() {
-    local codename
-    # Try lsb_release first, fallback to /etc/os-release
-    if command -v lsb_release &>/dev/null; then
-        codename=$(lsb_release -sc)
-    else
-        codename=$(grep '^UBUNTU_CODENAME=' /etc/os-release | cut -d= -f2)
+    # stdout contract: exactly one line (the codename). All logs go to stderr,
+    # so command substitutions like CODENAME=$(get_ubuntu_codename) stay clean.
+    local codename=""
+
+    # Allow override via environment variable (respected as-is)
+    if [[ -n "$WINE_REPO_CODENAME" ]]; then
+        codename=$(printf '%s' "$WINE_REPO_CODENAME" | tr -d '[:space:]')
+        if [[ ! "$codename" =~ ^[a-z0-9]+$ ]]; then
+            log_error "Invalid WINE_REPO_CODENAME '$codename'."
+        fi
+        log_info "Using user-provided codename: $codename"
+        echo "$codename"
+        return
     fi
+
+    # Linux Mint's lsb_release returns the Mint codename (e.g. wilma), not the
+    # Ubuntu one WineHQ needs. Prefer UBUNTU_CODENAME from /etc/os-release,
+    # which is correct on both Mint and Ubuntu.
+    codename=$(grep '^UBUNTU_CODENAME=' /etc/os-release 2>/dev/null | head -1 | cut -d= -f2)
+    if [[ -z "$codename" ]] && command -v lsb_release &>/dev/null; then
+        codename=$(lsb_release -sc 2>/dev/null)
+    fi
+
+    # Strip CR/whitespace (guards against CRLF / stray output)
+    codename=$(printf '%s' "$codename" | tr -d '[:space:]')
 
     if [[ -z "$codename" ]]; then
         log_error "Could not determine Ubuntu codename. Please set WINE_REPO_CODENAME manually."
     fi
-
-    # Allow override via environment variable
-    if [[ -n "$WINE_REPO_CODENAME" ]]; then
-        log_info "Using user‑provided codename: $WINE_REPO_CODENAME"
-        echo "$WINE_REPO_CODENAME"
-        return
+    if [[ ! "$codename" =~ ^[a-z0-9]+$ ]]; then
+        log_error "Invalid Ubuntu codename '$codename'. Please set WINE_REPO_CODENAME manually."
     fi
 
     # Officially supported by WineHQ (as of June 2026)
     local known_codenames=("focal" "jammy" "noble" "plucky" "questing" "resolute")
     local known=0
+    local k
     for k in "${known_codenames[@]}"; do
         if [[ "$codename" == "$k" ]]; then
             known=1
@@ -105,7 +120,7 @@ get_ubuntu_codename() {
 
     if [[ $known -eq 0 ]]; then
         log_warn "Ubuntu codename '$codename' is not yet in the WineHQ repository list."
-        log_warn "Falling back to 'noble' (Ubuntu 24.04 LTS) – this usually works for newer releases."
+        log_warn "Falling back to 'noble' (Ubuntu 24.04 LTS) - this usually works for newer releases."
         codename="noble"
     fi
 
@@ -219,15 +234,30 @@ if [[ "$REINSTALL" == false ]]; then
     log_info "Adding fresh WineHQ repository..."
     CODENAME=$(get_ubuntu_codename)
     sudo install -m 0755 -d /usr/share/keyrings
-    curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg
-    sudo tee /etc/apt/sources.list.d/winehq.sources > /dev/null <<EOF
-Types: deb
-URIs: https://dl.winehq.org/wine-builds/ubuntu/
-Suites: ${CODENAME}
-Components: main
-Signed-By: /usr/share/keyrings/winehq.gpg
-EOF
-    sudo apt update -qq
+    curl -fsSL https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/winehq.gpg || true
+
+    WINEHQ_SOURCES="/etc/apt/sources.list.d/winehq.sources"
+    # tr -d '\r' guards against CRLF-corrupted script copies
+    {
+        echo "Types: deb"
+        echo "URIs: https://dl.winehq.org/wine-builds/ubuntu/"
+        echo "Suites: ${CODENAME}"
+        echo "Components: main"
+        echo "Signed-By: /usr/share/keyrings/winehq.gpg"
+    } | tr -d '\r' | sudo tee "$WINEHQ_SOURCES" > /dev/null
+
+    # Validate the generated file BEFORE letting apt read it
+    if ! sudo grep -qE '^Types:[[:space:]]*deb[[:space:]]*$' "$WINEHQ_SOURCES" ||
+       ! sudo grep -qE '^Suites:[[:space:]]*[a-z0-9]+[[:space:]]*$' "$WINEHQ_SOURCES" ||
+       ! sudo grep -qE '^Components:[[:space:]]*main[[:space:]]*$' "$WINEHQ_SOURCES"; then
+        sudo rm -f "$WINEHQ_SOURCES"
+        log_error "Generated ${WINEHQ_SOURCES} failed validation and was removed. System apt is unaffected. Please report this issue."
+    fi
+
+    if ! sudo apt update -qq; then
+        sudo rm -f "$WINEHQ_SOURCES"
+        log_error "apt update failed; removed ${WINEHQ_SOURCES} so system apt keeps working. Check the error above, then re-run this script."
+    fi
 
     log_info "Installing Wine Stable & Winetricks..."
     sudo apt install -y --install-recommends winehq-stable winetricks
