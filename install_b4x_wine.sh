@@ -129,10 +129,21 @@ get_ubuntu_codename() {
 
 download_file() {
     local url="$1" dest="$2"
+    # On failure: clean up partial file, report to stderr, return 1 (does NOT exit,
+    # so optional call sites can recover with ||; critical sites exit via set -e
+    # AFTER this message is shown instead of dying silently).
     if command -v wget &>/dev/null; then
-        wget -q --show-progress -O "$dest" "$url"
+        if ! wget -q --show-progress -O "$dest" "$url"; then
+            rm -f "$dest" 2>/dev/null || true
+            log_warn "Download failed: $url"
+            return 1
+        fi
     elif command -v curl &>/dev/null; then
-        curl -fSL -o "$dest" "$url"
+        if ! curl -fSL -o "$dest" "$url"; then
+            rm -f "$dest" 2>/dev/null || true
+            log_warn "Download failed: $url"
+            return 1
+        fi
     else
         log_error "Neither wget nor curl found. Please install one."
     fi
@@ -302,7 +313,7 @@ if [[ "$REINSTALL" == false ]]; then
 
     JDK_EXTRACT_DIR="${WINE_PREFIX}/drive_c/temp/jdk_extract"
     mkdir -p "$JDK_EXTRACT_DIR"
-    unzip -q "$JDK_ZIP" -d "$JDK_EXTRACT_DIR"
+    unzip -q "$JDK_ZIP" -d "$JDK_EXTRACT_DIR" || log_error "Failed to extract JDK archive (corrupt download?): $JDK_ZIP"
     JDK_SRC=$(find "$JDK_EXTRACT_DIR" -maxdepth 1 -type d -name "jdk*" | head -1)
     if [[ -n "$JDK_SRC" && -d "$JDK_SRC" ]]; then
         cp -r "$JDK_SRC"/* "${WINE_PREFIX}/drive_c/Java/"
@@ -329,22 +340,23 @@ if [[ "$INSTALL_B4A" == true ]]; then
     if [[ "$REINSTALL" == false ]]; then
         # Android SDK
         log_info "Setting up Android SDK..."
-        SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
-        mkdir -p "$(dirname "$SDK_ZIP")"
-        download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
-
         SDK_TARGET="${SDK_LINUX_PATH}/cmdline-tools"
 
         # ✅ FIX: Skip if already installed to avoid 'Directory not empty' error
         if [[ -d "$SDK_TARGET" && -f "${SDK_TARGET}/bin/sdkmanager.bat" ]]; then
             log_info "Android SDK Command Line Tools already installed. Skipping."
         else
+            # Download only when actually needed (avoids re-fetching ~136 MB on every run)
+            SDK_ZIP="${WINE_PREFIX}/drive_c/temp/commandlinetools.zip"
+            mkdir -p "$(dirname "$SDK_ZIP")"
+            download_file "${SDK_CMDLINE_URL}" "$SDK_ZIP"
+
             # Create parent dir only (NOT the target, so mv can create it cleanly)
             mkdir -p "$(dirname "$SDK_TARGET")"
 
             SDK_TEMP="${WINE_PREFIX}/drive_c/temp/sdk_extract"
             rm -rf "$SDK_TEMP" 2>/dev/null || true
-            unzip -q "$SDK_ZIP" -d "$SDK_TEMP"
+            unzip -q "$SDK_ZIP" -d "$SDK_TEMP" || log_error "Failed to extract Android command-line tools: $SDK_ZIP"
 
             if [[ -d "${SDK_TEMP}/cmdline-tools" ]]; then
                 mv "${SDK_TEMP}/cmdline-tools" "$SDK_LINUX_PATH"
@@ -361,9 +373,14 @@ if [[ "$INSTALL_B4A" == true ]]; then
         echo "84831b9409646a918e30573bab4c9c91346d8abd" > "${SDK_LINUX_PATH}/licenses/android-sdk-preview-license"
 
         RES_ZIP="${WINE_PREFIX}/drive_c/temp/resources_7_25.zip"
-        download_file "${SDK_RESOURCES_URL}" "$RES_ZIP"
-        unzip -q -o "$RES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null || true
-        rm -f "$RES_ZIP"
+        # Supplementary resources: never block launcher creation if this fails
+        if download_file "${SDK_RESOURCES_URL}" "$RES_ZIP"; then
+            log_info "Extracting B4X resources (this may take a moment)..."
+            unzip -q -o "$RES_ZIP" -d "$SDK_LINUX_PATH" 2>/dev/null || log_warn "Could not extract B4X resources (continuing)."
+            rm -f "$RES_ZIP"
+        else
+            log_warn "B4X resources download failed - continuing without them (B4A is installed)."
+        fi
     else
         log_info "Reinstall mode: skipping Android SDK setup"
     fi
