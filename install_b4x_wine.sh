@@ -288,9 +288,26 @@ export WINEPREFIX="${WINE_PREFIX}"
 if [[ "$REINSTALL" == false ]]; then
     log_info "Creating/Updating 64-bit Wine prefix: ${WINE_PREFIX}..."
     wineboot -u 2>/dev/null || true
-
     log_info "Installing shared dependencies (VC++ 2010, .NET 4.5.2, DXVK, GDI)..."
-    winetricks -q vcrun2010 dotnet452 dxvk renderer=gdi 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
+    
+    # Extract Vulkan version (e.g., "1.3.268" or "1.4.304") if vulkaninfo is present
+    VULKAN_VER=""
+    if command -v vulkaninfo &>/dev/null; then
+        VULKAN_VER=$(vulkaninfo 2>/dev/null | awk '/apiVersion/ { match($0, /[0-9]+\.[0-9]+(\.[0-9]+)?/); print substr($0, RSTART, RLENGTH); exit }')
+    fi
+    # Auto-detect Vulkan 1.3+ using mathematical evaluation
+    if [ -n "$VULKAN_VER" ] && echo "$VULKAN_VER" | awk -F. '{ major=$1+0; minor=$2+0; if (major > 1 || (major == 1 && minor >= 3)) exit 0; else exit 1 }'; then
+        log_info "Detected Vulkan version $VULKAN_VER (1.3+ requirement met). Installing DXVK..."
+        winetricks -q vcrun2010 dotnet452 dxvk renderer=gdi fontsmooth=rgb corefonts 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
+    else
+        if [ -n "$VULKAN_VER" ]; then
+            log_warn "Detected Vulkan version $VULKAN_VER (Below 1.3 requirement). Forcing wined3d OpenGL fallback..."
+        else
+            log_warn "Vulkan not supported or vulkaninfo missing. Forcing wined3d OpenGL fallback..."
+        fi
+        winetricks -q vcrun2010 dotnet452 d3d9=builtin d3d11=builtin dxgi=builtin renderer=gdi fontsmooth=rgb corefonts 2>/dev/null || log_warn "Some dependencies failed. B4X may still work."
+    fi
+    
     winecfg -v win10 2>/dev/null || true
 else
     if [[ ! -d "$WINE_PREFIX" ]]; then
