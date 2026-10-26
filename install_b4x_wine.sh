@@ -3,7 +3,7 @@
 # B4X Unified Silent Installer for Linux Mint/Ubuntu (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
 # Author: pyhoon (Aeric) | AI Assistants: Qwen3.6 Plus + MiMo-V2.6-Flash Free
-# Date: 28 May 2026  (Updated 22 Sep 2026)
+# Date: 28 May 2026  (Updated 26 Oct 2026)
 # License: MIT
 #===============================================================================
 set -e  # Exit on error
@@ -34,6 +34,12 @@ ADDITIONAL_LIBS_DIR="${WINE_PREFIX}/drive_c/Additional Libraries"
 
 # Projects Directories
 B4X_PROJECTS_DIR="${B4X_PROJECTS_DIR:-${HOME}/B4X_Projects}"
+
+# Wine graphics backend: auto (default), xwayland, or wayland
+#   auto      = X11/XWayland when a working X display exists, otherwise native Wayland
+#   xwayland  = force Wine's X11 driver (via XWayland on Wayland sessions)
+#   wayland   = force Wine's experimental native Wayland driver (Wine 9+)
+GRAPHICS_MODE="${B4X_GRAPHICS:-auto}"
 
 # Desktop Entries & Icons
 B4A_DESKTOP_ENTRY="${HOME}/.local/share/applications/b4a.desktop"
@@ -71,6 +77,42 @@ check_mint() {
     if ! grep -qi "linux mint" /etc/os-release 2>/dev/null; then
         log_warn "This script is optimized for Linux Mint. Proceeding anyway..."
     fi
+}
+
+x_display_available() {
+    [[ -n "$DISPLAY" ]] || return 1
+    if command -v xset &>/dev/null; then
+        xset q >/dev/null 2>&1 && return 0
+        return 1
+    fi
+    if command -v xdpyinfo &>/dev/null; then
+        xdpyinfo >/dev/null 2>&1 && return 0
+        return 1
+    fi
+    local disp="${DISPLAY##*:}"
+    disp="${disp%%.*}"
+    [[ -S "/tmp/.X11-unix/X${disp}" ]]
+}
+
+resolve_graphics_mode() {
+    local requested="${GRAPHICS_MODE:-${B4X_GRAPHICS:-auto}}"
+    local mode="${requested,,}"
+    case "$mode" in
+        xwayland|x11) echo "x11"; return 0 ;;
+        wayland)      echo "wayland"; return 0 ;;
+        auto)         ;;
+        *) log_warn "Unknown B4X_GRAPHICS='${requested}', using auto." ;;
+    esac
+    if x_display_available; then
+        echo "x11"
+        return 0
+    fi
+    if [[ -n "$WAYLAND_DISPLAY" ]]; then
+        echo "wayland"
+        return 0
+    fi
+    log_warn "No X/XWayland display detected - defaulting to the X11 driver (install 'xwayland' if the IDE cannot start)."
+    echo "x11"
 }
 
 get_ubuntu_codename() {
@@ -215,6 +257,7 @@ check_root
 check_mint
 parse_args "$@"
 select_products
+GRAPHICS_DRIVER=$(resolve_graphics_mode)
 
 log_info "Configuration:"
 if [[ "$REINSTALL" == true ]]; then
@@ -226,6 +269,7 @@ fi
 [[ "$INSTALL_B4J" == true ]] && echo -e "  ${GREEN}• B4J: Enabled${NC}"
 echo -e "  ${YELLOW}• Wine Prefix: ${WINE_PREFIX}${NC}"
 echo -e "  ${YELLOW}• Java Path: ${JAVA_WINE_PATH}${NC}"
+echo -e "  ${YELLOW}• Graphics Driver: ${GRAPHICS_DRIVER}${NC}"
 [[ "$INSTALL_B4A" == true ]] && echo -e "  ${YELLOW}• Android SDK: ${SDK_WINE_PATH}${NC}"
 echo -e "  ${YELLOW}• B4X Projects: ${B4X_PROJECTS_DIR}${NC}"
 echo ""
@@ -319,6 +363,20 @@ else
 fi
 
 #-------------------------------------------------------------------------------
+# 2b. Graphics Driver (X11/XWayland vs native Wayland)
+#-------------------------------------------------------------------------------
+if [[ "$GRAPHICS_DRIVER" == "wayland" ]]; then
+    WINE_MAJOR=$(wine --version 2>/dev/null | grep -oE '[0-9]+' | head -1)
+    if [[ -n "$WINE_MAJOR" && "$WINE_MAJOR" -lt 9 ]]; then
+        log_warn "Wine ${WINE_MAJOR} has no native Wayland driver - falling back to X11/XWayland."
+        GRAPHICS_DRIVER="x11"
+    fi
+fi
+log_info "Configuring Wine graphics driver: ${GRAPHICS_DRIVER}"
+wine reg add 'HKCU\Software\Wine\Drivers' /v Graphics /t REG_SZ /d "$GRAPHICS_DRIVER" /f >/dev/null 2>&1 \
+    || log_warn "Could not set the Wine graphics driver (your Wine build may not support '${GRAPHICS_DRIVER}')."
+
+#-------------------------------------------------------------------------------
 # 3. Install JDK 19 (Shared, skipped on reinstall)
 #-------------------------------------------------------------------------------
 if [[ "$REINSTALL" == false ]]; then
@@ -406,6 +464,7 @@ if [[ "$INSTALL_B4A" == true ]]; then
     B4A_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A/B4A.exe"
     [[ ! -f "$B4A_EXE" ]] && B4A_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4A/B4A.exe"
     if [[ -f "$B4A_EXE" ]]; then
+        B4A_DIR="$(dirname "$B4A_EXE")"
         ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4a_icon.png"
         mkdir -p "$(dirname "$ICON_PATH")"
         download_file "${B4A_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
@@ -419,7 +478,7 @@ Version=1.0
 Name=B4A
 Comment=B4A IDE - Run via Wine
 Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4A_EXE}"
-Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4A
+Path=${B4A_DIR}
 Icon=${LOCAL_ICON}
 Terminal=false
 Type=Application
@@ -449,6 +508,7 @@ if [[ "$INSTALL_B4J" == true ]]; then
     B4J_EXE="${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J/B4J.exe"
     [[ ! -f "$B4J_EXE" ]] && B4J_EXE="${WINE_PREFIX}/drive_c/Program Files (x86)/Anywhere Software/B4J/B4J.exe"
     if [[ -f "$B4J_EXE" ]]; then
+        B4J_DIR="$(dirname "$B4J_EXE")"
         ICON_PATH="${WINE_PREFIX}/drive_c/temp/b4j_icon.png"
         mkdir -p "$(dirname "$ICON_PATH")"
         download_file "${B4J_ICON_URL}" "$ICON_PATH" 2>/dev/null || ICON_PATH=""
@@ -462,7 +522,7 @@ Version=1.0
 Name=B4J
 Comment=B4J IDE - Run via Wine
 Exec=env WINEPREFIX="${WINE_PREFIX}" wine "${B4J_EXE}"
-Path=${WINE_PREFIX}/drive_c/Program Files/Anywhere Software/B4J
+Path=${B4J_DIR}
 Icon=${LOCAL_ICON}
 Terminal=false
 Type=Application

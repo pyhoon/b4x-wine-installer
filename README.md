@@ -37,6 +37,7 @@ Supported distribution families:
 - ✅ Installs Wine Stable, Winetricks, .NET 4.5.2, VC++ 2010, DXVK & GDI
 - ✅ Downloads & extracts JDK 19, Android SDK Command Line Tools, and B4A Resources
 - ✅ Creates desktop launchers, icons, and shared `Additional Libraries` folders
+- ✅ Auto-detects X11/XWayland or native Wayland graphics (works on Wayland-only Ubuntu 26.04+)
 - ✅ Safe uninstaller with `--dry-run`, `--keep-projects`, and `--keep-wine` options
 
 ## 🖥️ System Requirements
@@ -48,6 +49,20 @@ Supported distribution families:
 - **Internet connection** for downloads
 - **~4.8 GB free disk space** (Wine prefix + JDK + B4A + B4J + Android SDK + B4A Resources)
 - **sudo privileges** for system package installation
+
+### 🖼️ Desktop / Display Server Support
+
+| Platform | Status |
+| --- | --- |
+| Linux Mint 22.x (Ubuntu 24.04 base) | ✅ Recommended, fully supported |
+| Ubuntu 24.04 LTS (X11, or Wayland + XWayland) | ✅ Supported |
+| Ubuntu 26.04 LTS (Wayland session, XWayland present) | ⚠️ Works via XWayland (`B4X_GRAPHICS=xwayland`) |
+| Truly X11-free (no XWayland) | 🧪 Experimental via Wine's native Wayland driver (`B4X_GRAPHICS=wayland`, requires Wine 9+) |
+
+> **Tip:** stay on **Linux Mint 22.x** or **Ubuntu 24.04 LTS** for the most stable experience. Avoid interim Ubuntu releases (24.10–25.10): 9-month support window and Wayland-only direction.
+>
+> The graphics backend is auto-detected: X11/XWayland is used when a working X display exists, otherwise the native Wayland driver. Override with `B4X_GRAPHICS=auto|xwayland|wayland` (e.g. `B4X_GRAPHICS=wayland ./install_b4x_wine.sh`). The choice is stored in the Wine prefix (`HKCU\Software\Wine\Drivers`).
+
 
 ### 📦 Packages installed by the script
 
@@ -250,4 +265,4 @@ Found an issue or have an improvement?
 MIT License - See [LICENSE](https://github.com/pyhoon/b4x-wine-installer/tree/main?tab=MIT-1-ov-file#) file for details.
 
 ---
-*Last updated: 22 Sep 2026 | Compatible with Linux Mint 21.x / 22.x, Ubuntu 22.04 / 24.04, and Arch-based distributions*
+*Last updated: 26 Oct 2026 | Compatible with Linux Mint 21.x / 22.x, Ubuntu 22.04 / 24.04 (and Wayland-only releases via XWayland or the native Wayland driver), and Arch-based distributions*
