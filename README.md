@@ -2,6 +2,7 @@
 
 [![Linux Mint](https://img.shields.io/badge/Linux_Mint-21.x%20%7C%2022.x-green?logo=linux-mint)](https://linuxmint.com/)
 [![Arch Linux](https://img.shields.io/badge/Arch-rolling-1793D1?logo=arch-linux)](https://archlinux.org/)
+[![Fedora](https://img.shields.io/badge/Fedora-supported-51A2DA?logo=fedora)](https://fedoraproject.org/)
 [![Wine](https://img.shields.io/badge/Wine-Stable-blue?logo=wine)](https://winehq.org/)
 [![IDE-B4A](https://img.shields.io/badge/IDE-B4A-teal?logo=android)](https://www.b4x.com/b4a.html)
 [![IDE-B4J](https://img.shields.io/badge/IDE-B4J-magenta?logo=b4x)](https://www.b4x.com/b4j.html)
