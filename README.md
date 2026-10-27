@@ -102,6 +102,18 @@ chmod +x install_b4x_wine.sh
 ```
 > 🔐 You'll be prompted for your password when `sudo` is needed.
 
+### Fedora / Red Hat-based distributions
+
+Run these commands from a terminal to download and start the Fedora/RHEL installer:
+
+```bash
+curl -fLO https://raw.githubusercontent.com/pyhoon/b4x-wine-installer/main/other-distros/fedora/install_b4x_wine.sh
+chmod +x install_b4x_wine.sh
+./install_b4x_wine.sh --all
+```
+
+Replace `--all` with `--b4a` or `--b4j` to install only one IDE, or omit the option to choose from the interactive menu.
+
 ## ⚙️ Configuration Details
 ### Wine Prefix Location
 `~/.wine_b4x/` (dedicated unified prefix for both B4A & B4J)
