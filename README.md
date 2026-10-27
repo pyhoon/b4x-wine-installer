@@ -13,6 +13,7 @@ Supported distribution families:
 
 - **Ubuntu / Linux Mint / Pop!_OS / Debian derivatives** (via `apt` + WineHQ repo)
 - **Arch / Manjaro / EndeavourOS / Garuda / CachyOS / Artix** (via `pacman`, auto-enables `[multilib]`)
+- **Fedora / RHEL / Rocky Linux / AlmaLinux / CentOS Stream** (via `dnf`; see [`other-distros/fedora`](other-distros/fedora/))
 
 ![logo](icons/Combo.png)
 ![screenshot1](screenshots/01.png)
@@ -45,6 +46,7 @@ Supported distribution families:
 - **Linux** on x86_64, with one of these distribution families:
   - **Ubuntu/Mint family:** Linux Mint 21.x / 22.x, Ubuntu 22.04 (jammy) or 24.04 (noble), Pop!_OS, …
   - **Arch family:** Arch, Manjaro, EndeavourOS, Garuda, CachyOS, Artix, … (`[multilib]` will be enabled automatically if missing)
+  - **Fedora/RHEL family:** Fedora and RHEL-compatible distributions (see [`other-distros/fedora`](other-distros/fedora/))
 - **64-bit architecture** (with 32-bit support enabled — handled by the script)
 - **Internet connection** for downloads
 - **~4.8 GB free disk space** (Wine prefix + JDK + B4A + B4J + Android SDK + B4A Resources)

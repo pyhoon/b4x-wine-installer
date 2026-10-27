@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# B4X Unified Silent Installer for Linux Mint/Ubuntu (Wine-based)
+# B4X Unified Silent Installer for Linux (Wine-based)
 # Supports: B4A, B4J, or Both in a single Wine prefix.
 # Author: pyhoon (Aeric) | AI Assistants: Qwen3.6 Plus + MiMo-V2.6-Flash Free
 # Date: 28 May 2026  (Updated 26 Oct 2026)
@@ -74,7 +74,8 @@ check_root() {
 }
 
 check_mint() {
-    if ! grep -qi "linux mint" /etc/os-release 2>/dev/null; then
+    if ! grep -qi "linux mint" /etc/os-release 2>/dev/null &&
+       ! grep -qiE '^(ID|ID_LIKE)=.*(fedora|rhel|centos|rocky|almalinux)' /etc/os-release 2>/dev/null; then
         log_warn "This script is optimized for Linux Mint. Proceeding anyway..."
     fi
 }
@@ -278,6 +279,15 @@ echo ""
 # 1. System & Wine Setup (Shared, skipped on reinstall)
 #-------------------------------------------------------------------------------
 if [[ "$REINSTALL" == false ]]; then
+    if grep -qiE '^(ID|ID_LIKE)=.*(fedora|rhel|centos|rocky|almalinux)' /etc/os-release 2>/dev/null; then
+        command -v dnf &>/dev/null || log_error "dnf not found; Fedora/RHEL-based systems require dnf."
+        log_info "Installing Wine and Winetricks with dnf..."
+        sudo dnf install -y wine winetricks cabextract unzip wget curl desktop-file-utils
+        # Wine's 32-bit libraries are needed by some Winetricks verbs and Windows installers.
+        sudo dnf install -y wine-core.i686 || log_warn "Could not install wine-core.i686; some 32-bit components may not work."
+        WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
+        log_success "Wine installed: ${WINE_VERSION}"
+    else
     log_info "Enabling 32-bit architecture support..."
     sudo dpkg --add-architecture i386 2>/dev/null || true
 
@@ -318,6 +328,7 @@ if [[ "$REINSTALL" == false ]]; then
     sudo apt install -y --install-recommends winehq-stable winetricks
     WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
     log_success "Wine installed: ${WINE_VERSION}"
+    fi
 else
     command -v wine &>/dev/null || log_error "Wine not found. Install Wine first, or run without reinstall options."
     WINE_VERSION=$(wine --version 2>/dev/null || echo "unknown")
